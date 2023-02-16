@@ -1,6 +1,8 @@
 import clock from "clock";
 import document from "document";
 
+import { writeToLog, clearLog } from '../lib/io-utils';
+
 /**
  * Session view menu entry
  */
@@ -18,12 +20,13 @@ let sessionBackswipeCallback = undefined;
 let sessionStart = undefined;
 let sessionResult = "00:00:000"
 let durationText = undefined;
+let logArray = [];
 
 function resetSession() {
   /* Reset internal session variables */
   sessionStart = undefined;
   clock.ontick = undefined;
-  disableDreamtButton(true);
+  disableDreamButton(true);
 }
 
 function sessionDurationUpdate() {
@@ -44,6 +47,9 @@ function updateFinishView() {
     document.onbeforeunload = sessionBackswipeCallback;
   }
 
+  /* Clear the session log */
+  logArray.length = 0;
+  
   /* Finishing the session will reload the view. Update just the last session duration. */
   document.getElementById("btn-finish").addEventListener("click", () => {
     console.log("Finishing session");
@@ -75,19 +81,13 @@ function updateFinishView() {
   });
 }
 
-function disableDreamtButton(disabled) {
-  let dreamtButton = document.getElementById("button-dreamt");
-  
-  if(dreamtButton == null) {
-    return
-  }
-
-  if(disabled == true ) {
-    dreamtButton.style.fill = "fb-dark-gray";
-  } else {
-    dreamtButton.style.fill = "fb-cyan";
-  }
-}  
+/* log a call for the DREAM button */
+function logDreamButton() {
+  logArray.unshift(formatMessage("DREAM"));
+  console.log("start writing message: " + JSON.stringify(logArray)); 
+  writeToLog(logArray);
+  console.log("CLICKED DREAM");
+};
 
 export function update() {
   const sessionToggle = document.getElementById("session-toggle");
@@ -104,7 +104,10 @@ export function update() {
         return;
       }
 
-      disableDreamtButton(false);
+      //clear the log file before new session
+      clearLog();
+
+      disableDreamButton(false);
 
       sessionStart = new Date();
       durationText.text = "00:00:000";
@@ -130,7 +133,35 @@ export function update() {
   });
 };
 
+function disableDreamButton(disabled) {
+  let dreamButton = document.getElementById("button-dream");
+  
+  if(dreamButton == null) {
+    return
+  }
+
+  if(disabled == true ) {
+    dreamButton.style.fill = "fb-dark-gray";
+    dreamButton.removeEventListener("click", logDreamButton);
+  } else {
+    dreamButton.style.fill = "fb-cyan";
+    dreamButton.addEventListener("click", logDreamButton);
+  }
+}  
+
+function formatMessage(message) {
+  let d = new Date();
+  let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
+  return timeString + " " + message;
+}
+
+function addZero(i) {
+  if (i < 10) {i = "0" + i}
+  return i;
+}
+
 export function init() {
   console.log("session-view start");
-  return document.location.assign('session.view');
+  return document
+  .location.assign('session.view');
 }

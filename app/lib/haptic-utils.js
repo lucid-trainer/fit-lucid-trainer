@@ -10,7 +10,8 @@ export const vibrationRepeater = (pattern, count, interval) => {
       }, 1000*count); 
       console.log('sent ' + pattern);
     } else {
-      let timer = setInterval(()=>{
+      vibration.start(pattern);
+      let timer = setInterval(()=>{  
         vibration.stop();
         vibration.start(pattern);
         console.log('sent ' + pattern);

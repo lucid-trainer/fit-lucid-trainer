@@ -23,9 +23,16 @@
       <rect id="tile-background" class="tile-background" />
       <image class="tile-list-icon" href="icons/icon.png" />
       <text id="text" class="foreground-fill" />
-      <rect id="start" class="tile-background" opacity="0"
-      pointer-events="visible" />
+      <rect id="start" class="tile-background" opacity="0" pointer-events="visible" />
       <rect id="tile-divider-bottom" class="tile-divider-bottom" />
+    </symbol>
+
+    <!-- Virtual Tile log list item widget -->
+    <symbol id="log-item" href="#tile-list-item" class="log-list-item" display="none">
+      <rect class="bg" />
+      <text id="text" />
+      <rect class="line" />
+      <rect id="touch" pointer-events="all" />
     </symbol>
 
   </defs>

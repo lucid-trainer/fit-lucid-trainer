@@ -1,6 +1,8 @@
 import * as fs from "fs";
 
 const SETTINGS_FILE = "settings.cbor";
+const LOG_FILE = "sesslog.txt";
+const LOG_LENGTH = 12;
 
 export const saveSettings = (haptic, duration) => {
 
@@ -22,7 +24,6 @@ export const getSettings = () => {
     const haptic = json_data.haptic.values[0].value || '';
     const duration = json_data.duration.values[0].value || 0;
     
-    
     console.log("haptic: " + JSON.stringify(haptic) + " duration: " + JSON.stringify(duration));
 
     return {
@@ -30,3 +31,32 @@ export const getSettings = () => {
       duration: duration
     };
   };
+
+  export const writeToLog = (logArray) => {
+    let message = '';
+    if(logArray.length > LOG_LENGTH) {
+      logArray.length = LOG_LENGTH;
+    }
+
+    for (let i = 0; i < logArray.length; i++) {
+      message = message + logArray[i] + "\n";
+    }
+
+    fs.writeFileSync(LOG_FILE, message, "ascii");
+    console.log("wrote message: " + message);
+  };
+
+  export const readFromLog = () => {
+    let messages = '';
+    if (fs.existsSync(LOG_FILE)) {
+      messages = fs.readFileSync(LOG_FILE, "ascii");
+    }
+    console.log("read messages: " + JSON.stringify(messages));
+    return messages;
+  }
+
+  export const clearLog = () => {
+    if (fs.existsSync(LOG_FILE)) {
+      fs.unlinkSync(LOG_FILE); 
+    }
+  }

@@ -1,7 +1,27 @@
 <svg id="background" >
   <rect x="0"   y="0" width="100%" height="100%" fill="#000000" />
   <animate attributeName="x" from="100%" to="0" begin="load" dur="0.5" easing="ease-in-out" />
-  <textarea id="description" class="textarea-msg">
-    This is a dummy view of logs, there's nothing here right now! Backswipe to try something else from the main menu.
-  </textarea>
+  <use id="myList" href="#tile-list">
+    <var id="virtual" value="1" />
+    <var id="reorder-enabled" value="0"/>
+    <var id="peek-enabled" value="0"/>
+    <var id="separator-height-bottom" value="2" />
+    <use id="header" href="#my-tile-list-header" class="tile-list-header">
+      <set href="text" attributeName="text-buffer" to="Event Log" />
+    </use>
+    <use id="my-pool" href="#tile-list-pool" y = "25">
+      <use id="my-pool[0]" href="#log-item" />
+      <use id="my-pool[1]" href="#log-item" />
+      <use id="my-pool[2]" href="#log-item" />
+      <use id="my-pool[3]" href="#log-item" />
+      <use id="my-pool[4]" href="#log-item" />
+      <use id="my-pool[5]" href="#log-item" />
+      <use id="my-pool[6]" href="#log-item" />
+      <use id="my-pool[7]" href="#log-item" />
+      <use id="my-pool[8]" href="#log-item" />
+      <use id="my-pool[9]" href="#log-item" />
+      <use id="my-pool[10]" href="#log-item" />
+      <use id="my-pool[11]" href="#log-item" />
+    </use>
+  </use>
 </svg>
