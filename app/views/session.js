@@ -23,6 +23,7 @@ function resetSession() {
   /* Reset internal session variables */
   sessionStart = undefined;
   clock.ontick = undefined;
+  disableDreamtButton(true);
 }
 
 function sessionDurationUpdate() {
@@ -74,6 +75,20 @@ function updateFinishView() {
   });
 }
 
+function disableDreamtButton(disabled) {
+  let dreamtButton = document.getElementById("button-dreamt");
+  
+  if(dreamtButton == null) {
+    return
+  }
+
+  if(disabled == true ) {
+    dreamtButton.style.fill = "fb-dark-gray";
+  } else {
+    dreamtButton.style.fill = "fb-cyan";
+  }
+}  
+
 export function update() {
   const sessionToggle = document.getElementById("session-toggle");
   /* Display of the current session time. */
@@ -88,6 +103,8 @@ export function update() {
         document.onbeforeunload = undefined;
         return;
       }
+
+      disableDreamtButton(false);
 
       sessionStart = new Date();
       durationText.text = "00:00:000";

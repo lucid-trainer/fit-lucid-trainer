@@ -2,6 +2,7 @@
 .application-fill           { fill: fb-cyan; }
 .foreground-fill            { fill: fb-white; }
 .background-fill            { fill: fb-black; }
+.disabled-fill              { fill: fb-dark-gray; }
 
 .container {
   x: 10%;
@@ -40,7 +41,6 @@
 
 #duration               { text-buffer: "00:00:000" }
 #label-session          { text-buffer: "Session active"; }
-#label-animate          { text-buffer: "Animate view reset"; }
 
 .defaultText {
   font-size: 20;
@@ -111,5 +111,9 @@
   text-length: 300;
   text-anchor: middle;
   width: 80%;
-  fill: "fb-white";
+  fill: fb-white;
+}
+
+#button-dreamt #text {
+  text-buffer: "DREAMT";
 }

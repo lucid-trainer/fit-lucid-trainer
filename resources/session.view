@@ -12,4 +12,5 @@
       <rect class="line" />
     </svg>
   </svg>
+  <use id="button-dreamt" href="#text-button" class="text-button bottom disabled-fill" />
 </svg>
