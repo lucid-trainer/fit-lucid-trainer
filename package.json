@@ -10,8 +10,8 @@
   "fitbit": {
     "appUUID": "6f1eb247-eedf-41f6-a354-a59b38f777b5",
     "appType": "app",
-    "appDisplayName": "SDK App Demo",
-    "iconFile": "resources/icons/icon.png",
+    "appDisplayName": "Lucid Trainer",
+    "iconFile": "resources/icon.png",
     "wipeColor": "#ff8000",
     "requestedPermissions": [],
     "buildTargets": [

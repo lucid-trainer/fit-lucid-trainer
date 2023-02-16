@@ -11,10 +11,5 @@
       <use id="session-toggle" href="#toggle-switch" class="toggle-switch" />
       <rect class="line" />
     </svg>
-    <svg class="row">
-      <text id="label-animate" class="defaultText" />
-      <use id="animate-toggle" href="#toggle-switch" class="toggle-switch" value="1" />
-      <rect class="line" />
-    </svg>
   </svg>
 </svg>

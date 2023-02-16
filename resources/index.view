@@ -8,14 +8,11 @@
       <use id="header" href="#my-tile-list-header" class="tile-list-header">
         <set href="text" attributeName="text-buffer" to="Scenarios" />
       </use>
-      <use id="single-view" href="#my-tile-list-item" class="tile-list-item">
-        <set href="text" attributeName="text-buffer" to="Single View" />
-      </use>
       <use id="session-view" href="#my-tile-list-item" class="tile-list-item">
-        <set href="text" attributeName="text-buffer" to="Session View" />
+        <set href="text" attributeName="text-buffer" to="Session" />
       </use>
-      <use id="cycle-views" href="#my-tile-list-item" class="tile-list-item">
-        <set href="text" attributeName="text-buffer" to="Cycle Views" />
+      <use id="log-view" href="#my-tile-list-item" class="tile-list-item">
+        <set href="text" attributeName="text-buffer" to="Log" />
       </use>
     </use>
   </use>

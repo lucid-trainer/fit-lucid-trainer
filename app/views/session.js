@@ -99,17 +99,6 @@ export function update() {
         console.log("onbeforeunload called");
         evt.preventDefault();
 
-        const background = document.getElementById("background");
-        const animateToggle = document.getElementById("animate-toggle");
-
-        if (animateToggle.value == true) {
-          console.log("resetting view with animation");
-          background.animate("enable");
-        } else {
-          console.log("resetting view directly");
-          background.x = 0;
-        }
-
         /* save the old session handling, we'll need it in case session is not finished */
         sessionBackswipeCallback = document.onbeforeunload;
 

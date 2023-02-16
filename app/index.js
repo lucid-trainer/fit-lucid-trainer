@@ -5,9 +5,8 @@ import document from "document";
  * involving multiple views.
  */
 const buttonCallbacks = [
-  ["single-view/start",   () => import("./views/single")],
   ["session-view/start",  () => import("./views/session")],
-  ["cycle-views/start",   () => import("./views/cycle")],
+  ["log-view/start",   () => import("./views/log")],
 ];
 
 /**
