@@ -6,9 +6,6 @@
     <var id="reorder-enabled" value="0"/>
     <var id="peek-enabled" value="0"/>
     <var id="separator-height-bottom" value="2" />
-    <use id="header" href="#my-tile-list-header" class="tile-list-header">
-      <set href="text" attributeName="text-buffer" to="Event Log" />
-    </use>
     <use id="my-pool" href="#tile-list-pool" y = "25">
       <use id="my-pool[0]" href="#log-item" />
       <use id="my-pool[1]" href="#log-item" />

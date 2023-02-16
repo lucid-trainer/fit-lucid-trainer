@@ -1,5 +1,5 @@
 import document from "document";
-import { readFromLog } from '../lib/io-utils';
+import { readFromLog } from '../lib/files';
 
 const LOG_HEADER = "RECENT ACTIVITY";
 
@@ -23,7 +23,7 @@ export function update() {
       };
     },
     configureTile: (tile, info) => {
-      console.log(`Item: ${info.index}`)
+      //console.log(`Item: ${info.index}`)
       if (info.type == "my-pool") {
         tile.getElementById("text").text = `${logArray[info.index]}`;
         let touch = tile.getElementById("touch");
@@ -40,6 +40,5 @@ export function update() {
 }
 
 export function init() {
-  console.log("log-view clicked");
   return document.location.assign('log.view');
 }

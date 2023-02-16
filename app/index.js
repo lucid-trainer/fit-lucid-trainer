@@ -1,4 +1,7 @@
 import document from "document";
+import { me } from "appbit";
+
+me.appTimeoutEnabled = false; // Disable timeout
 
 /**
  * Handlers for the tile list buttons. Each button navigates to a different scenario

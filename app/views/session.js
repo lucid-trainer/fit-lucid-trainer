@@ -1,10 +1,14 @@
 import clock from "clock";
 import document from "document";
+import * as messaging from "messaging";
 
-import { writeToLog, clearLog } from '../lib/io-utils';
+import { writeToLog, clearLog, formatMessage } from '../lib/files';
+import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
+import sleep from "sleep";
 
 /**
- * Session view menu entry
+ * Session view menu entry. Manages start/stop of sessions, capturing of sleep state data and
+ * user interaction, sends data on interval to companion for REST request and processes response
  */
 
 /**
@@ -15,18 +19,41 @@ const TOGGLE_VALUE_DELAY_MS = 300;
  * Leave some room to observe the view coming back when backswipe is canceled. Not mandatory.
  */
 const VIEW_RESET_DELAY_MS = 200;
+const REST_INTERVAL = 1;
 
 let sessionBackswipeCallback = undefined;
 let sessionStart = undefined;
 let sessionResult = "00:00:000"
 let durationText = undefined;
+let restIntervalStatus = undefined;
 let logArray = [];
+
+let restMessageQueue = [];
+let restIntervalId = undefined;
+let restSessionUUID = "";
+let restMsg = {}; //the current object to capture state
+
+let accelerometer = getAccelerometer(restMsg);
+let hrm = getHeartRateSensor(restMsg);
 
 function resetSession() {
   /* Reset internal session variables */
   sessionStart = undefined;
   clock.ontick = undefined;
+  restSessionUUID = "";
+  
+  if (typeof restIntervalId !== 'undefined') {
+    clearInterval(restIntervalId);
+    restIntervalId = undefined;
+  }
+  
+  /* stop sensor readings */
+  hrm.stop();
+  accelerometer.stop();
+
   disableDreamButton(true);
+
+  updateRestStatusText("");
 }
 
 function sessionDurationUpdate() {
@@ -57,17 +84,19 @@ function updateFinishView() {
     /* Final updates */
     sessionDurationUpdate();
     sessionResult = durationText.text;
-
+    
     resetSession();
+
     document.history.back(); /* we know that this is the topmost view */
 
     /*
      * NOTE: The side-effect is that the forward view stack history is cleared and the views are
      * unloaded.
      */
+    
     document.location.replace("session.view").then(update).catch((err) => {
       console.error(`Error returning to session view - ${err.message}`);
-    });
+    });    
   });
 
   /**
@@ -81,10 +110,10 @@ function updateFinishView() {
   });
 }
 
-/* log a call for the DREAM button */
-function logDreamButton() {
+/* process the DREAM button click */
+function processDreamButton() {
+  restMsg.event = "dreamButton.click";
   logArray.unshift(formatMessage("DREAM"));
-  console.log("start writing message: " + JSON.stringify(logArray)); 
   writeToLog(logArray);
   console.log("CLICKED DREAM");
 };
@@ -95,6 +124,8 @@ export function update() {
   durationText = document.getElementById("duration");
   durationText.text = sessionResult;
 
+  restIntervalStatus = document.getElementById("rest-interval");
+
   /* Session start / stop logic */
   sessionToggle.addEventListener("click", () => {
     setTimeout(() => {
@@ -103,6 +134,13 @@ export function update() {
         document.onbeforeunload = undefined;
         return;
       }
+
+      //start the sensor readings
+      console.log("start heart monitor");
+      hrm.start();
+
+      console.log("start accelerometer");
+      accelerometer.start();
 
       //clear the log file before new session
       clearLog();
@@ -114,6 +152,18 @@ export function update() {
 
       clock.granularity = "seconds";
       clock.ontick = sessionDurationUpdate;
+
+      
+      restSessionUUID = getSessionId();
+
+      if(messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
+        updateRestStatusText("CONNECT READY");
+      } else {
+        updateRestStatusText("CONNECT ERROR");
+      }  
+
+      // Post update every x minute
+      restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60);   
 
       document.onbeforeunload = (evt) => {
         console.log("onbeforeunload called");
@@ -142,23 +192,73 @@ function disableDreamButton(disabled) {
 
   if(disabled == true ) {
     dreamButton.style.fill = "fb-dark-gray";
-    dreamButton.removeEventListener("click", logDreamButton);
+    dreamButton.removeEventListener("click", processDreamButton);
   } else {
     dreamButton.style.fill = "fb-cyan";
-    dreamButton.addEventListener("click", logDreamButton);
+    dreamButton.addEventListener("click", processDreamButton);
   }
-}  
-
-function formatMessage(message) {
-  let d = new Date();
-  let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
-  return timeString + " " + message;
 }
 
-function addZero(i) {
-  if (i < 10) {i = "0" + i}
-  return i;
+function updateRestStatusText(status)  {
+  let restIntervalText = formatMessage(status);
+  if(restIntervalStatus === undefined) {
+    restIntervalStatus = document.getElementById("rest-interval");
+  }
+  restIntervalStatus.text = restIntervalText;
 }
+
+function postUpdate() {
+  console.log("enter postUpdate");
+  restMsg.sessionId = restSessionUUID;
+  restMsg.timestamp = Date.now();
+  restMsg.isSleep = sleep.state;
+  let restMsgCopy = JSON.parse(JSON.stringify(restMsg));
+  restMessageQueue.push(restMsgCopy);
+
+  Object.keys(restMsg).forEach(key => { restMsg[key] = undefined; });
+
+  console.log("readyState: " + messaging.peerSocket.readyState);
+  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
+    updateRestStatusText("SENDING...");
+    sendQueue();
+  } else {
+    updateRestStatusText("...QUEING");
+    sendQueue();
+  }
+}
+
+function sendQueue() {
+  while(restMessageQueue.length) {
+    console.log("restMessageQueue length: " + restMessageQueue.length);
+    let queueRestMsg = restMessageQueue.shift()
+    console.log("rest call request: " + JSON.stringify(queueRestMsg));
+    messaging.peerSocket.send({
+      command: "restUpdate",
+      msg: queueRestMsg
+    });
+  }
+}
+
+// Begin processing the queue when a connection opens
+messaging.peerSocket.open = function() {
+  console.log("Peer socket opened");
+  sendQueue();
+}
+
+// Listen for the onmessage event from companion
+messaging.peerSocket.onmessage = function(evt) {
+  if(evt.data.key === 'restResponse') {
+    let response = evt.data.value.data;
+    console.log("rest call response: " + response);
+    
+    updateRestStatusText("RECEIVED");
+  }  
+}
+
+const getSessionId = () => {
+  return Date.now().toString(36) + 
+    Math.random().toString(36).substring(2);
+};
 
 export function init() {
   console.log("session-view start");

@@ -60,3 +60,14 @@ export const getSettings = () => {
       fs.unlinkSync(LOG_FILE); 
     }
   }
+
+  export const formatMessage = (message) => {
+    let d = new Date();
+    let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
+    return timeString + " " + message;
+  }
+
+  function addZero(i) {
+    if (i < 10) {i = "0" + i}
+    return i;
+  }
