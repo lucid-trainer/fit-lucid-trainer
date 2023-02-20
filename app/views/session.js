@@ -4,6 +4,7 @@ import * as messaging from "messaging";
 
 import { writeToLog, clearLog, formatMessage } from '../lib/files';
 import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
+import {initIndex} from "../views/index-init";
 import sleep from "sleep";
 
 /**
@@ -21,7 +22,6 @@ const TOGGLE_VALUE_DELAY_MS = 300;
 const VIEW_RESET_DELAY_MS = 200;
 const REST_INTERVAL = 1;
 
-let sessionBackswipeCallback = undefined;
 let sessionStart = undefined;
 let sessionResult = "00:00:000"
 let durationText = undefined;
@@ -86,6 +86,7 @@ function updateFinishView() {
     sessionResult = durationText.text;
     
     resetSession();
+    document.onbeforeunload = sessionOffBackswipeCallback;
 
     document.history.back(); /* we know that this is the topmost view */
 
@@ -120,6 +121,8 @@ function processDreamButton() {
 
 export function update() {
   const sessionToggle = document.getElementById("session-toggle");
+  document.onbeforeunload = sessionOffBackswipeCallback;
+
   /* Display of the current session time. */
   durationText = document.getElementById("duration");
   durationText.text = sessionResult;
@@ -131,7 +134,7 @@ export function update() {
     setTimeout(() => {
       if (sessionToggle.value == false) {
         resetSession();
-        document.onbeforeunload = undefined;
+        document.onbeforeunload = sessionOffBackswipeCallback;
         return;
       }
 
@@ -163,25 +166,42 @@ export function update() {
       }  
 
       // Post update every x minute
-      restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60);   
+      restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60); 
 
-      document.onbeforeunload = (evt) => {
-        console.log("onbeforeunload called");
-        evt.preventDefault();
+      document.onbeforeunload = sessionBackswipeCallback;
 
-        /* save the old session handling, we'll need it in case session is not finished */
-        sessionBackswipeCallback = document.onbeforeunload;
-
-        /* leave some time for the animation to happen, then load the new view */
-        setTimeout(() => {
-          document.location.assign('session-finish.view').then(updateFinishView).catch((err) => {
-            console.error(`Error loading finish view - ${err.message}`);
-          });
-        }, VIEW_RESET_DELAY_MS);
-      }
     }, TOGGLE_VALUE_DELAY_MS);
   });
 };
+
+const sessionOffBackswipeCallback = (evt) => {
+  console.log("onbeforeunload called for off");
+  evt.preventDefault();
+
+  const background = document.getElementById("background");
+  console.log("resetting view with animation");
+  background.x = 0;
+
+  document.location.replace('index.view').then(initIndex).catch((err) => {
+    console.error(`Error loading index view - ${err.message}`);
+  });
+}  
+
+const sessionBackswipeCallback = (evt) => {
+  console.log("onbeforeunload called");
+  evt.preventDefault();
+
+  const background = document.getElementById("background");
+  console.log("resetting view with animation");
+  background.animate("enable");
+
+  /* leave some time for the animation to happen, then load the new view */
+  setTimeout(() => {
+    document.location.assign('session-finish.view').then(updateFinishView).catch((err) => {
+      console.error(`Error loading finish view - ${err.message}`);
+    });
+  }, VIEW_RESET_DELAY_MS);
+}
 
 function disableDreamButton(disabled) {
   let dreamButton = document.getElementById("button-dream");
