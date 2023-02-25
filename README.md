@@ -1,12 +1,9 @@
-# sdk-app-demo
+# fit-lucid-trainer
 
-Fitbit SDK example application which demonstrates the tile list and multiple screens.
+Fitbit SDK 5.0 App to capture sleep related data and send to an external REST service. UI built upon examples in [sdk-app-demo](https://github.com/Fitbit/sdk-app-demo).
 
 ![Screenshot](screenshot.png)
 
-Find out more information on the
-[Fitbit Developer Website](https://dev.fitbit.com).
-
 ## License
 
-This example is licensed under the [MIT License](./LICENSE).
+This application is licensed under the [MIT License](./LICENSE).

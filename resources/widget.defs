@@ -21,7 +21,7 @@
     <!-- Tile list item widget -->
     <symbol id="my-tile-list-item" href="#tile-list-item">
       <rect id="tile-background" class="tile-background" />
-      <image class="tile-list-icon" href="icons/icon.png" />
+      <image id="logo" class="tile-list-icon" />
       <text id="text" class="foreground-fill" />
       <rect id="start" class="tile-background" opacity="0" pointer-events="visible" />
       <rect id="tile-divider-bottom" class="tile-divider-bottom" />
