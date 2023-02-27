@@ -1,10 +1,10 @@
 import clock from "clock";
 import document from "document";
-import * as messaging from "messaging";
 
 import { writeToLog, clearLog, formatMessage } from '../lib/files';
 import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
-import {initIndex} from "../views/index-init";
+import { initIndex } from "../views/index-init";
+import { sendMessageQueue, initMessageSocket, resetMessageSocket } from "../lib/messages";
 import sleep from "sleep";
 
 /**
@@ -21,9 +21,11 @@ const TOGGLE_VALUE_DELAY_MS = 300;
  */
 const VIEW_RESET_DELAY_MS = 200;
 const REST_INTERVAL = 1;
+const REST_MESSAGE_CMD = "restUpdate";
+const REST_RESPONSE_KEY = "restResponse";
 
 let sessionStart = undefined;
-let sessionResult = "00:00:000"
+let sessionResult = "00:00:00:000"
 let durationText = undefined;
 let restIntervalStatus = undefined;
 let logArray = [];
@@ -32,6 +34,7 @@ let restMessageQueue = [];
 let restIntervalId = undefined;
 let restSessionUUID = "";
 let restMsg = {}; //the current object to capture state
+let dreamClickCnt = 0;
 
 let accelerometer = getAccelerometer(restMsg);
 let hrm = getHeartRateSensor(restMsg);
@@ -52,8 +55,8 @@ function resetSession() {
   accelerometer.stop();
 
   disableDreamButton(true);
-
   updateRestStatusText("");
+  resetMessageSocket();
 }
 
 function sessionDurationUpdate() {
@@ -65,7 +68,8 @@ function sessionDurationUpdate() {
   const millis = now - sessionStart;
   const secs = Math.floor(millis / 1000);
   const mins = Math.floor(secs / 60);
-  durationText.text = [`0${mins}`.slice(-2), `0${secs}`.slice(-2), millis % 1000].join(':');
+  const hrs = Math.floor(mins/60);
+  durationText.text = [`0${hrs}`.slice(-2), `0${mins}`.slice(-2), `0${secs}`.slice(-2), millis % 1000].join(':');
 }
 
 function updateFinishView() {
@@ -111,13 +115,19 @@ function updateFinishView() {
   });
 }
 
-/* process the DREAM button click */
+/* process the dream button click */
 function processDreamButton() {
-  restMsg.event = "dreamButton.click";
-  logArray.unshift(formatMessage("DREAM"));
-  writeToLog(logArray);
-  console.log("CLICKED DREAM");
-};
+  if(dreamClickCnt == 0) {
+    logArray.unshift(formatMessage("DREAM"));
+    writeToLog(logArray);
+  }  
+
+  if (dreamClickCnt < 5) {
+    dreamClickCnt++;
+  }
+  
+  restMsg.event = "dream." + dreamClickCnt;
+}  
 
 export function update() {
   const sessionToggle = document.getElementById("session-toggle");
@@ -159,11 +169,8 @@ export function update() {
       
       restSessionUUID = getSessionId();
 
-      if(messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
-        updateRestStatusText("CONNECT READY");
-      } else {
-        updateRestStatusText("CONNECT ERROR");
-      }  
+      initMessageSocket(restMessageQueue, REST_MESSAGE_CMD, 
+        REST_RESPONSE_KEY, updateRestStatusText, logResponse); 
 
       // Post update every x minute
       restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60); 
@@ -219,12 +226,18 @@ function disableDreamButton(disabled) {
   }
 }
 
-function updateRestStatusText(status)  {
+const updateRestStatusText = (status) => {
   let restIntervalText = formatMessage(status);
   if(restIntervalStatus === undefined) {
     restIntervalStatus = document.getElementById("rest-interval");
   }
   restIntervalStatus.text = restIntervalText;
+}
+
+const logResponse = (response) => {
+  let { movement, heartRate, isSleep } = JSON.parse(response)
+  logArray.unshift(formatMessage("RCVD " + movement + ":" + heartRate + ":" + isSleep));
+  writeToLog(logArray);
 }
 
 function postUpdate() {
@@ -236,43 +249,8 @@ function postUpdate() {
   restMessageQueue.push(restMsgCopy);
 
   Object.keys(restMsg).forEach(key => { restMsg[key] = undefined; });
-
-  console.log("readyState: " + messaging.peerSocket.readyState);
-  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
-    updateRestStatusText("SENDING...");
-    sendQueue();
-  } else {
-    updateRestStatusText("...QUEING");
-    sendQueue();
-  }
-}
-
-function sendQueue() {
-  while(restMessageQueue.length) {
-    console.log("restMessageQueue length: " + restMessageQueue.length);
-    let queueRestMsg = restMessageQueue.shift()
-    console.log("rest call request: " + JSON.stringify(queueRestMsg));
-    messaging.peerSocket.send({
-      command: "restUpdate",
-      msg: queueRestMsg
-    });
-  }
-}
-
-// Begin processing the queue when a connection opens
-messaging.peerSocket.open = function() {
-  console.log("Peer socket opened");
-  sendQueue();
-}
-
-// Listen for the onmessage event from companion
-messaging.peerSocket.onmessage = function(evt) {
-  if(evt.data.key === 'restResponse') {
-    let response = evt.data.value.data;
-    console.log("rest call response: " + response);
-    
-    updateRestStatusText("RECEIVED");
-  }  
+  dreamClickCnt = 0;
+  sendMessageQueue(restMessageQueue, REST_MESSAGE_CMD, updateRestStatusText);
 }
 
 const getSessionId = () => {
@@ -285,3 +263,5 @@ export function init() {
   return document
   .location.assign('session.view');
 }
+
+
