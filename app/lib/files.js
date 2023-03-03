@@ -62,9 +62,13 @@ export const getSettings = () => {
   }
 
   export const formatMessage = (message) => {
-    let d = new Date();
-    let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
-    return timeString + " " + message;
+    if(message) {
+      let d = new Date();
+      let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
+      return timeString + " " + message;
+    }
+    
+    return "";
   }
 
   function addZero(i) {

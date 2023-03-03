@@ -25,7 +25,7 @@ const REST_MESSAGE_CMD = "restUpdate";
 const REST_RESPONSE_KEY = "restResponse";
 
 let sessionStart = undefined;
-let sessionResult = "00:00:00:000"
+let sessionResult = "00:00:00"
 let durationText = undefined;
 let restIntervalStatus = undefined;
 let logArray = [];
@@ -64,12 +64,17 @@ function sessionDurationUpdate() {
     return;
   }
 
-  const now = new Date();
-  const millis = now - sessionStart;
-  const secs = Math.floor(millis / 1000);
-  const mins = Math.floor(secs / 60);
-  const hrs = Math.floor(mins/60);
-  durationText.text = [`0${hrs}`.slice(-2), `0${mins}`.slice(-2), `0${secs}`.slice(-2), millis % 1000].join(':');
+  //const now = new Date();
+  const now = Math.floor(Date.now() / 1000);
+  const totalSeconds = now - sessionStart;
+  const hrs = Math.floor(totalSeconds/3600);
+  const mins = Math.floor((totalSeconds - hrs*3600)/60);
+  const secs = Math.floor(totalSeconds - (hrs*3600 + mins*60));
+
+  console.log("totalSeconds " + totalSeconds + ", hrs" + hrs + ", mins" + mins + ", secs" + secs);
+
+  durationText.text = [`0${hrs}`.slice(-2), `0${mins}`.slice(-2), `0${secs}`.slice(-2)].join(':');
+  console.log(durationText.text);
 }
 
 function updateFinishView() {
@@ -160,8 +165,8 @@ export function update() {
 
       disableDreamButton(false);
 
-      sessionStart = new Date();
-      durationText.text = "00:00:000";
+      sessionStart = new Date() / 1000;
+      durationText.text = "00:00:00";
 
       clock.granularity = "seconds";
       clock.ontick = sessionDurationUpdate;
