@@ -1,17 +1,11 @@
 import * as messaging from "messaging";
 
-const ping = {
-  key: "wakeEvent",
-  value: "wake up!",
-};
+const ping = { key: "wakeEvent", value: "wake up!" };
 
 export const sendMessageQueue = (messageQueue, messageCommand, setStatusCallback) => {
-
-  console.log("readyState: " + messaging.peerSocket.readyState);
   if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     setStatusCallback("SENDING...");
     while(messageQueue.length) {
-      console.log("messageQueue length: " + messageQueue.length);
       let message = messageQueue.shift()
       console.log("rest call request: " + JSON.stringify(message));
       messaging.peerSocket.send({
@@ -21,13 +15,17 @@ export const sendMessageQueue = (messageQueue, messageCommand, setStatusCallback
     }
   } else {
     setStatusCallback("...QUEING");
-    messaging.peerSocket.send(ping);
+    try {
+      //maybe if ping it the connection with the companion will open
+      messaging.peerSocket.send(ping);
+    } catch {
+      //do nothing
+    }  
   }
     
 }
 
-export const initMessageSocket = (messageQueue, messageCommand, responseKey, setStatusCallback, logResponse) => {
-   
+export const initMessageSocket = (messageQueue, messageCommand, responseKey, setStatusCallback, logResponse) => {   
   if(messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     setStatusCallback("CONNECT READY");
   } else {
@@ -44,7 +42,7 @@ export const initMessageSocket = (messageQueue, messageCommand, responseKey, set
   messaging.peerSocket.onmessage = function(evt) {
     if(evt.data.key === responseKey) {
       let response = evt.data.value.data;
-      console.log("response: " + response);
+      console.log(responseKey + " response: " + response);
       logResponse(response);
       
       setStatusCallback("RECEIVED");

@@ -18,8 +18,6 @@ export const saveSettings = (haptic, duration) => {
 
 export const getSettings = () => {
     let json_data  = fs.readFileSync(SETTINGS_FILE, "cbor");
-  
-    console.log("settings: " + JSON.stringify(json_data));
 
     const haptic = json_data.haptic.values[0].value || '';
     const duration = json_data.duration.values[0].value || 0;
@@ -43,7 +41,6 @@ export const getSettings = () => {
     }
 
     fs.writeFileSync(LOG_FILE, message, "ascii");
-    console.log("wrote message: " + message);
   };
 
   export const readFromLog = () => {
@@ -51,7 +48,6 @@ export const getSettings = () => {
     if (fs.existsSync(LOG_FILE)) {
       messages = fs.readFileSync(LOG_FILE, "ascii");
     }
-    console.log("read messages: " + JSON.stringify(messages));
     return messages;
   }
 

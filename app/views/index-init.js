@@ -14,7 +14,7 @@ const buttonCallbacks = [
  * associated JavaScript is loaded and executed, and the new view is loaded on
  * top of the current one.
  */
-export function initIndex() {
+export const initIndex = () => {
     buttonCallbacks.forEach((view) => {
     const [buttonID, viewJSLoader] = view;
 
@@ -24,17 +24,15 @@ export function initIndex() {
             console.error(`Error loading view: ${err.message}`);
         });
         }).catch((err) => {
-        console.error(`Failed to load view JS: ${buttonID} - ${err.message}`);
+            console.error(`Failed to load view JS: ${buttonID} - ${err.message}`);
         });
     });
     });
 
     document.onbeforeunload = (evt) => {
-        console.log("onbeforeunload on index called");
         evt.preventDefault();
-
+        
         const background = document.getElementById("background");
-        console.log("resetting view");
         background.x = 0;
     }
 }

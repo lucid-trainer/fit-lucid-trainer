@@ -1,4 +1,4 @@
-function SettingsConfig(props) {
+const SettingsConfig = (props) => {
     return (
       <Page>
           <Section

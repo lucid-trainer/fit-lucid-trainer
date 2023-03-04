@@ -39,7 +39,54 @@ let dreamClickCnt = 0;
 let accelerometer = getAccelerometer(restMsg);
 let hrm = getHeartRateSensor(restMsg);
 
-function resetSession() {
+export const update = () => {
+  const sessionToggle = document.getElementById("session-toggle");
+  document.onbeforeunload = sessionOffBackswipeCallback;
+
+  /* Display of the current session time. */
+  durationText = document.getElementById("duration");
+  durationText.text = sessionResult;
+
+  restIntervalStatus = document.getElementById("rest-interval");
+
+  /* Session start / stop logic */
+  sessionToggle.addEventListener("click", () => {
+    setTimeout(() => {
+      if (sessionToggle.value == false) {
+        resetSession();
+        document.onbeforeunload = sessionOffBackswipeCallback;
+        return;
+      }
+
+      //start the sensor readings
+      hrm.start();
+      accelerometer.start();
+
+      //clear the log file before new session
+      clearLog();
+
+      disableDreamButton(false);
+
+      sessionStart = new Date() / 1000;
+      durationText.text = "00:00:00";
+      clock.granularity = "seconds";
+      clock.ontick = sessionDurationUpdate;
+
+      restSessionUUID = getSessionId();
+
+      initMessageSocket(restMessageQueue, REST_MESSAGE_CMD, 
+        REST_RESPONSE_KEY, updateRestStatusText, logResponse); 
+
+      // Post update every x minute
+      restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60); 
+
+      document.onbeforeunload = sessionBackswipeCallback;
+
+    }, TOGGLE_VALUE_DELAY_MS);
+  });
+};
+
+const resetSession = () => {
   /* Reset internal session variables */
   sessionStart = undefined;
   clock.ontick = undefined;
@@ -59,25 +106,21 @@ function resetSession() {
   resetMessageSocket();
 }
 
-function sessionDurationUpdate() {
+const sessionDurationUpdate = () => {
   if (durationText === undefined) {
     return;
   }
 
-  //const now = new Date();
   const now = Math.floor(Date.now() / 1000);
   const totalSeconds = now - sessionStart;
   const hrs = Math.floor(totalSeconds/3600);
   const mins = Math.floor((totalSeconds - hrs*3600)/60);
   const secs = Math.floor(totalSeconds - (hrs*3600 + mins*60));
 
-  console.log("totalSeconds " + totalSeconds + ", hrs" + hrs + ", mins" + mins + ", secs" + secs);
-
   durationText.text = [`0${hrs}`.slice(-2), `0${mins}`.slice(-2), `0${secs}`.slice(-2)].join(':');
-  console.log(durationText.text);
 }
 
-function updateFinishView() {
+const updateFinishView = () => {
   /* When this view exits, we want to restore the document.onbeforeunload handler */
   document.onunload = () => {
     document.onbeforeunload = sessionBackswipeCallback;
@@ -88,7 +131,6 @@ function updateFinishView() {
   
   /* Finishing the session will reload the view. Update just the last session duration. */
   document.getElementById("btn-finish").addEventListener("click", () => {
-    console.log("Finishing session");
 
     /* Final updates */
     sessionDurationUpdate();
@@ -120,7 +162,6 @@ function updateFinishView() {
   });
 }
 
-/* process the dream button click */
 function processDreamButton() {
   if(dreamClickCnt == 0) {
     logArray.unshift(formatMessage("DREAM"));
@@ -134,64 +175,10 @@ function processDreamButton() {
   restMsg.event = "dream." + dreamClickCnt;
 }  
 
-export function update() {
-  const sessionToggle = document.getElementById("session-toggle");
-  document.onbeforeunload = sessionOffBackswipeCallback;
-
-  /* Display of the current session time. */
-  durationText = document.getElementById("duration");
-  durationText.text = sessionResult;
-
-  restIntervalStatus = document.getElementById("rest-interval");
-
-  /* Session start / stop logic */
-  sessionToggle.addEventListener("click", () => {
-    setTimeout(() => {
-      if (sessionToggle.value == false) {
-        resetSession();
-        document.onbeforeunload = sessionOffBackswipeCallback;
-        return;
-      }
-
-      //start the sensor readings
-      console.log("start heart monitor");
-      hrm.start();
-
-      console.log("start accelerometer");
-      accelerometer.start();
-
-      //clear the log file before new session
-      clearLog();
-
-      disableDreamButton(false);
-
-      sessionStart = new Date() / 1000;
-      durationText.text = "00:00:00";
-
-      clock.granularity = "seconds";
-      clock.ontick = sessionDurationUpdate;
-
-      
-      restSessionUUID = getSessionId();
-
-      initMessageSocket(restMessageQueue, REST_MESSAGE_CMD, 
-        REST_RESPONSE_KEY, updateRestStatusText, logResponse); 
-
-      // Post update every x minute
-      restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60); 
-
-      document.onbeforeunload = sessionBackswipeCallback;
-
-    }, TOGGLE_VALUE_DELAY_MS);
-  });
-};
-
 const sessionOffBackswipeCallback = (evt) => {
-  console.log("onbeforeunload called for off");
   evt.preventDefault();
 
   const background = document.getElementById("background");
-  console.log("resetting view with animation");
   background.x = 0;
 
   document.location.replace('index.view').then(initIndex).catch((err) => {
@@ -200,11 +187,9 @@ const sessionOffBackswipeCallback = (evt) => {
 }  
 
 const sessionBackswipeCallback = (evt) => {
-  console.log("onbeforeunload called");
   evt.preventDefault();
 
   const background = document.getElementById("background");
-  console.log("resetting view with animation");
   background.animate("enable");
 
   /* leave some time for the animation to happen, then load the new view */
@@ -215,7 +200,7 @@ const sessionBackswipeCallback = (evt) => {
   }, VIEW_RESET_DELAY_MS);
 }
 
-function disableDreamButton(disabled) {
+const disableDreamButton = (disabled) => {
   let dreamButton = document.getElementById("button-dream");
   
   if(dreamButton == null) {
@@ -245,7 +230,7 @@ const logResponse = (response) => {
   writeToLog(logArray);
 }
 
-function postUpdate() {
+const postUpdate = () => {
   console.log("enter postUpdate");
   restMsg.sessionId = restSessionUUID;
   restMsg.timestamp = Date.now();
@@ -263,8 +248,7 @@ const getSessionId = () => {
     Math.random().toString(36).substring(2);
 };
 
-export function init() {
-  console.log("session-view start");
+export const init = () => {
   return document
   .location.assign('session.view');
 }

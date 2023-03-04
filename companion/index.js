@@ -1,14 +1,13 @@
 import * as messaging from 'messaging'
 import { settingsStorage } from 'settings'
-import { RestAPI } from "./rest.js"
+import { postMessage } from "./rest.js"
 import { me as companion} from "companion";
 
 let messageQueue = [];
+const REST_MESSAGE_CMD = "restUpdate";
+const REST_URL = "https://httpbin.org/post";  //replace with your server address
 
-const ping = {
-  key: "wakeCompanionEvent",
-  value: "wake up!",
-};
+const ping = { key: "wakeCompanionEvent", value: "wake up!" };
 
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
 //wake up the companion every 5 minutes
@@ -38,7 +37,14 @@ settingsStorage.onchange = (evt) => {
   sendMessageToDevice();
 }
 
-function restoreSettings() {
+// Listen for the onmessage event from device
+messaging.peerSocket.onmessage = function(evt) {
+  if(evt.data && evt.data.command === REST_MESSAGE_CMD) {
+    postRestMessage(evt.data.msg);
+  }
+}
+
+const restoreSettings = () => {
   for (let index = 0; index < settingsStorage.length; index++) {
     const key = settingsStorage.key(index)
 
@@ -54,10 +60,9 @@ function restoreSettings() {
 }
 
 //send message to device 
-function sendMessageToDevice() {
+const sendMessageToDevice = () => {
   if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     while(messageQueue.length) {
-      console.log("messageQueue length: " + messageQueue.length);
       let message = messageQueue.shift()
       console.log("message: " + JSON.stringify(message));
       messaging.peerSocket.send(message);
@@ -68,16 +73,8 @@ function sendMessageToDevice() {
 
 }
 
-// Listen for the onmessage event from device
-messaging.peerSocket.onmessage = function(evt) {
-  if(evt.data && evt.data.command === "restUpdate") {
-    postRestMessage(evt.data.msg);
-  }
-}
-
-function postRestMessage(msg) {
-  let restApi = new RestAPI();
-  restApi.postMessage(msg)
+const postRestMessage = (msg) => {
+  postMessage(msg, REST_URL)
   .then(response => {
     const data = {
       key: "restResponse",

@@ -7,7 +7,7 @@ const LOG_HEADER = "RECENT ACTIVITY";
 /**
  * Log view menu entry
  */
-export function update() {
+export const update = () => {
   let myList = document.getElementById("myList");
   document.onbeforeunload = logBackswipeCallback;
 
@@ -52,6 +52,6 @@ const logBackswipeCallback = (evt) => {
   });
 }  
 
-export function init() {
+export const init = () => {
   return document.location.assign('log.view');
 }
