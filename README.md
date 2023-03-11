@@ -2,7 +2,7 @@
 
 A Fitbit SDK 5.0 App to capture sleep related data and send to an external REST service. UI built upon examples in [sdk-app-demo](https://github.com/Fitbit/sdk-app-demo). 
 
-The goal of this project is to provide access to real-time data to develop a customized algorithm for identifying REM sleep state. Future updates will add a lucid dreaming induction option via vibration. The app can be built and side loaded onto the Sense and should also work with the Versa 3. It may work with the Sense 2 and Versa 4 as well but it's unclear currently if those watches will support custom apps. 
+The goal of this project is to provide access to real-time data to develop a customized algorithm for identifying REM sleep state. Future updates will add a lucid dreaming induction option via vibration. The app can be built and sideloaded onto the Sense and Versa 3. It may work with the Sense 2 and Versa 4 as well but it's unclear currently if those watches will support custom apps. 
 
 The app provides a simple menu with the option to start a session or view a log of recent activity. Views are exited by swiping the screen from left to right.
 
@@ -19,6 +19,8 @@ An example of the REST payload posted to the server, which will be returned in t
 # Getting Started
 
 The app can be built and deployed to a device using the Fitbit Command Line Interface. The [Command Line Interface Guide](https://dev.fitbit.com/build/guides/command-line-interface/) provides all the steps needed to get set up. The main prerequisites include a Fitbit account with free developer access, installing node.js and performing an npm install in the root directory of the project. It is also useful to install a source code editor like [Microsoft VSCode](https://code.visualstudio.com/).
+
+One limitation on REST calls from Fitbit watches is that the endpoint must support https and have a valid signed cert. An easy solution for that which also makes the data accessible quickly is to use [MongoDB Atlas](https://www.mongodb.com/atlas). You can sign up for the free Shared version and begin recording data in a few minutes. Easy configuration setup in the app is supported in the rest.js file. Once the data is in Atlas, you can work with it as is or import it into a local database with [MongoDB Compass](https://www.mongodb.com/products/compass) or a similar client application. 
 
 ## License
 

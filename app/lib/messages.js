@@ -1,4 +1,5 @@
 import * as messaging from "messaging";
+import { formatResponse} from "../../common/rest";
 
 const ping = { key: "wakeEvent", value: "wake up!" };
 
@@ -34,15 +35,13 @@ export const initMessageSocket = (messageQueue, messageCommand, responseKey, set
 
   // Begin processing the queue when a connection opens
   messaging.peerSocket.open = function() {
-    console.log("Peer socket opened");
     sendMessageQueue(messageQueue, messageCommand, setStatusCallback);
   }
 
   // Listen for the onmessage event from companion
   messaging.peerSocket.onmessage = function(evt) {
     if(evt.data.key === responseKey) {
-      let response = evt.data.value.data;
-      console.log(responseKey + " response: " + response);
+      let response = formatResponse(evt.data.value);
       logResponse(response);
       
       setStatusCallback("RECEIVED");
@@ -55,4 +54,3 @@ export const resetMessageSocket = () => {
   messaging.peerSocket.onmessage = undefined;
 }
 
-  

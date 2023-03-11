@@ -1,11 +1,10 @@
 import * as messaging from 'messaging'
 import { settingsStorage } from 'settings'
-import { postMessage } from "./rest.js"
+import { postMessage } from "../common/rest.js"
 import { me as companion} from "companion";
 
 let messageQueue = [];
 const REST_MESSAGE_CMD = "restUpdate";
-const REST_URL = "https://httpbin.org/post";  //replace with your server address
 
 const ping = { key: "wakeCompanionEvent", value: "wake up!" };
 
@@ -74,7 +73,7 @@ const sendMessageToDevice = () => {
 }
 
 const postRestMessage = (msg) => {
-  postMessage(msg, REST_URL)
+  postMessage(msg)
   .then(response => {
     const data = {
       key: "restResponse",

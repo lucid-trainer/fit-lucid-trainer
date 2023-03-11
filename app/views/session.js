@@ -225,8 +225,7 @@ const updateRestStatusText = (status) => {
 }
 
 const logResponse = (response) => {
-  let { movement, heartRate, isSleep } = JSON.parse(response)
-  logArray.unshift(formatMessage("RCVD " + movement + ":" + heartRate + ":" + isSleep));
+  logArray.unshift(formatMessage(response));
   writeToLog(logArray);
 }
 
