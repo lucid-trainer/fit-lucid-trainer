@@ -1,10 +1,11 @@
 import clock from "clock";
 import document from "document";
 
-import { writeToLog, clearLog, formatMessage } from '../lib/files';
+import { writeToLog, clearLog, formatMessage, getUTCString } from '../lib/files';
 import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
 import { sendMessageQueue, initMessageSocket, resetMessageSocket } from "../lib/messages";
+import {sum, diff, mean, abs, std} from "scientific";
 import sleep from "sleep";
 
 /**
@@ -78,7 +79,7 @@ export const update = () => {
         REST_RESPONSE_KEY, updateRestStatusText, logResponse); 
 
       // Post update every x minute
-      restIntervalId = setInterval(postUpdate, REST_INTERVAL * 1000 * 60); 
+      restIntervalId = setInterval(postUpdate, (REST_INTERVAL * 1000 * 30) + 100); 
 
       document.onbeforeunload = sessionBackswipeCallback;
 
@@ -230,15 +231,23 @@ const logResponse = (response) => {
 }
 
 const postUpdate = () => {
-  console.log("enter postUpdate");
-  restMsg.sessionId = restSessionUUID;
-  restMsg.timestamp = Date.now();
-  restMsg.isSleep = sleep.state;
+  //create a copy and reset the global values
   let restMsgCopy = JSON.parse(JSON.stringify(restMsg));
-  restMessageQueue.push(restMsgCopy);
-
   Object.keys(restMsg).forEach(key => { restMsg[key] = undefined; });
   dreamClickCnt = 0;
+  
+  //set additional fields
+  restMsgCopy.sessionId = restSessionUUID;
+  restMsgCopy.timestamp = getUTCString();
+  restMsgCopy.isSleep = sleep.state;
+
+  //process sensor data
+  let moveArray = new Float32Array(restMsgCopy.moveArray);
+  delete restMsgCopy['moveArray'];
+
+  restMsgCopy.move = mean(moveArray).toFixed(2);
+  restMessageQueue.push(restMsgCopy);
+
   sendMessageQueue(restMessageQueue, REST_MESSAGE_CMD, updateRestStatusText);
 }
 

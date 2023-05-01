@@ -71,3 +71,9 @@ export const getSettings = () => {
     if (i < 10) {i = "0" + i}
     return i;
   }
+
+  export function getUTCString() {
+    let now = new Date();
+    now = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return now.toJSON().slice(0,-1);
+  }
