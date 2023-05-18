@@ -14,7 +14,21 @@ The session view provides a toggle button to start/stop an active capture sessio
 
 An example of the REST payload posted to the server, which will be returned in the response if using httpbin.
 
-```{"movement":"0.20","heartRate":"76","sessionId":"lernckvn6iimnuppen9","timestamp":1677794323721,"isSleep":"awake"}```
+```
+{
+  "positionArray": [
+    { "x": "1.5062", "y": "-0.3887","z": "10.2714"},
+    { "x": "9.0376", "y": "-3.1737", "z": "2.3004"}
+  ],
+  "hr": "57",
+  "hrVar": "1.70",
+  "event": "dream.3",
+  "sessionId": "lhsj63b5xvgscyb5ma",
+  "timestamp": "2023-05-18T03:00:50.823",
+  "isSleep": "asleep",
+  "move": "1.53"
+}
+```
 
 # Getting Started
 
