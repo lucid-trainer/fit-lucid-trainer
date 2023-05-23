@@ -32,8 +32,11 @@ export const getHeartRateSensor = (restMsg ) => {
 
         let meanHr = mean(hrm.readings.heartRate);
         restMsg.hr = meanHr.toFixed(0);
-
+        
         restMsg.hrVar = std(filterHeartRateReadings).toFixed(2);
+
+        //include the raw heart rate readings
+        restMsg.hrArray = getNumberArrayFromFloat(hrm.readings.heartRate);
     };
 
     
@@ -89,6 +92,16 @@ function processAccelReadings(accelerometer, restMsg) {
     //update the fields on the restMsg object
     restMsg.positionArray = positionArray;
     restMsg.moveArray = moveArray;
+}
+
+//convert a Float32Array to Number Array
+function getNumberArrayFromFloat(floatArray) {
+    var numArray = [];
+    for (var i in floatArray) {
+        var num = Number(floatArray[i]);
+        numArray.push(num); 
+    }
+    return numArray;
 }
 
 
