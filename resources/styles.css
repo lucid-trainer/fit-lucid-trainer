@@ -1,6 +1,6 @@
 
-.application-fill           { fill: fb-cyan; }
-.foreground-fill            { fill: fb-white; }
+.application-fill           { fill: #B22222; }
+.foreground-fill            { fill: fb-red; }
 .background-fill            { fill: fb-black; }
 .disabled-fill              { fill: fb-dark-gray; }
 
@@ -47,7 +47,7 @@
   font-family: System-Regular;
   font-weight: regular;
   text-length: 32;
-  fill: "fb-white";
+  fill: "fb-red";
 }
 
 .tile-list-item {
@@ -93,7 +93,7 @@
   font-size: 24;
   x: 50%;
   text-anchor: middle;
-  fill: fb-white;
+  fill: fb-black;
   opacity: 1;
 }
 
@@ -118,7 +118,7 @@
   text-length: 300;
   text-anchor: middle;
   width: 80%;
-  fill: fb-white;
+  fill: fb-red;
 }
 
 #button-dream #text {

@@ -212,7 +212,7 @@ const disableDreamButton = (disabled) => {
     dreamButton.style.fill = "fb-dark-gray";
     dreamButton.removeEventListener("click", processDreamButton);
   } else {
-    dreamButton.style.fill = "fb-cyan";
+    dreamButton.style.fill = "#B22222";
     dreamButton.addEventListener("click", processDreamButton);
   }
 }
