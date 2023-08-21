@@ -2,19 +2,25 @@ import * as messaging from 'messaging'
 import { settingsStorage } from 'settings'
 import { postMessage } from "../common/rest.js"
 import { me as companion} from "companion";
+import { inbox } from "file-transfer";
 
 let messageQueue = [];
+
 const REST_MESSAGE_CMD = "restUpdate";
-
 const ping = { key: "wakeCompanionEvent", value: "wake up!" };
-
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
-//wake up the companion every 5 minutes
+
+//try to keep the companion up
+setInterval(function(){ 
+    var data = {};
+    data["ping"]=1;
+  }, 10000);
+
+//try to wake up the companion every 5 minutes if the data ping doesn't work
 companion.wakeInterval = 5 * MILLISECONDS_PER_MINUTE;
 
 // Listen for the event
 companion.addEventListener("wakeinterval", () => {
-  console.log("Wake interval happened!");
   messageQueue.push(ping);
   sendMessageToDevice();
 });
@@ -37,11 +43,11 @@ settingsStorage.onchange = (evt) => {
 }
 
 // Listen for the onmessage event from device
-messaging.peerSocket.onmessage = function(evt) {
-  if(evt.data && evt.data.command === REST_MESSAGE_CMD) {
-    postRestMessage(evt.data.msg);
-  }
-}
+// messaging.peerSocket.onmessage = function(evt) {
+//   if(evt.data && evt.data.command === REST_MESSAGE_CMD) {
+//     postRestMessage(evt.data.msg);
+//   }
+// }
 
 const restoreSettings = () => {
   for (let index = 0; index < settingsStorage.length; index++) {
@@ -72,9 +78,10 @@ const sendMessageToDevice = () => {
 
 }
 
-const postRestMessage = (msg) => {
+const postRestMessage = (msg, filename) => {
   postMessage(msg)
   .then(response => {
+    response.filename = filename;
     const data = {
       key: "restResponse",
       value: response,
@@ -82,6 +89,28 @@ const postRestMessage = (msg) => {
     messageQueue.push(data);
     sendMessageToDevice();
   }).catch(function (e) {
-    console.log("error"); console.log(e)
+    console.log("error"); 
+    console.log(e);
   });
 }
+
+async function processAllFiles() {
+  //console.log("starting function processAllFiles");
+  try {
+    let file;
+    while ((file = await inbox.pop())) {
+      const payload = await file.text();
+      const filename = await file.name;
+      
+      let message = JSON.parse(payload);
+      postRestMessage(message, filename);
+    }
+  } catch(e) {
+      console.log("error"); 
+      console.log(e);
+  }
+}
+
+inbox.addEventListener("newfile", processAllFiles);
+
+

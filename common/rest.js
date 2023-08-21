@@ -1,6 +1,6 @@
 const REST_URL = "https://httpbin.org/post"; //set to the REST service if not not Atlas
-const API_KEY = undefined; //set if Atlas or required by REST service
 
+const API_KEY = undefined; //set if Atlas or required by REST service
 //Mongo Atlas DB Api fields, will use instead of default if set
 const ATLAS_REST_URL =  undefined;
 const ATLAS_COLLECTION = undefined;
@@ -35,19 +35,20 @@ export const postMessage = (msg) => {
             body: JSON.stringify(postMsg),
             headers: headers
         })
-            .then(response => response.json())
-            .then(json => {
-                console.log("response " + json.data);
-                resolve(json);
-            }
-            )
-            .catch(error => reject(error));
+        .then(response => response.json())
+        .then(json => 
+          { 
+            resolve(json); 
+          }
+        )
+        .catch(error => reject(error));
     });
 }
 
 export const formatResponse = (resp) => {
   if(ATLAS_REST_URL) {
-    let { insertedId } = resp;
+    let { insertedId, filename } = resp;
+    console.log("response filename=" + filename);
     return "id:" + insertedId.slice(0,8);
   } else {
     let { movement, heartRate, isSleep } = JSON.parse(resp.data);

@@ -2,8 +2,25 @@
   <rect x="0"   y="0" width="100%" height="100%" fill="#000000" />
   <animate attributeName="opacity" from="0" to="1" begin="load" dur="0.5" easing="ease-in-out" />
   <textarea id="description" class="textarea-msg">
-    Are you sure you want to finish this session? Backswipe to cancel.
+    Play the guided meditation
   </textarea>
-  <use id="btn-finish" href="#text-button" class="text-button primary application-fill" />
+ <svg id="cycle-container">
+    <rect id="cycle-background" class="application-fill" />
+    <use id="volume-cycle" href="#cycleview" pointer-events = "visible">
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 20%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 40%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 60%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 80%</text>
+      </use>
+    </use>
+  </svg>
+  <use id="btn-play" href="#text-button" class="text-button primary application-fill" />
   <use id="btn-cancel" href="#text-button" class="text-button secondary application-fill" />
 </svg>

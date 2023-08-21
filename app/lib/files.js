@@ -1,6 +1,8 @@
 import * as fs from "fs";
+import { outbox } from "file-transfer";
 
 const SETTINGS_FILE = "settings.cbor";
+const MESSAGE_FILE_PATH = "/private/data/"
 const LOG_FILE = "sesslog.txt";
 const LOG_LENGTH = 12;
 
@@ -67,13 +69,32 @@ export const getSettings = () => {
     return "";
   }
 
+  export const getUTCString = (now) =>  {
+    now = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return now.toJSON().slice(0,-1);
+  }
+
+export const sendMessageInFile = (message, msgFilePoolNum, setStatusCallback) => {
+    setStatusCallback("SENDING...");
+    console.log("writing message: " + JSON.stringify(message));
+
+    let file = MESSAGE_FILE_PATH + "message_" + msgFilePoolNum + ".txt"
+
+    fs.writeFileSync(file, JSON.stringify(message), "ascii");
+
+    outbox.enqueueFile(file)
+      .then(ft => {
+        console.log(`Transfer of ${ft.name} successfully queued.`);
+        fs.unlinkSync(file);
+      })
+      .catch(err => {
+        console.log(`Failed to schedule transfer: ${err}`);
+      })
+
+    setStatusCallback("FILE SENT...");
+}
+
   function addZero(i) {
     if (i < 10) {i = "0" + i}
     return i;
-  }
-
-  export function getUTCString() {
-    let now = new Date();
-    now = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    return now.toJSON().slice(0,-1);
   }
