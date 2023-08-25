@@ -2,9 +2,8 @@ import * as fs from "fs";
 import { outbox } from "file-transfer";
 
 const SETTINGS_FILE = "settings.cbor";
-const MESSAGE_FILE_PATH = "/private/data/"
 const LOG_FILE = "sesslog.txt";
-const LOG_LENGTH = 12;
+const LOG_LENGTH = 50;
 
 export const saveSettings = (haptic, duration) => {
 
@@ -74,25 +73,85 @@ export const getSettings = () => {
     return now.toJSON().slice(0,-1);
   }
 
-export const sendMessageInFile = (message, msgFilePoolNum, setStatusCallback) => {
-    setStatusCallback("SENDING...");
+  export const processFileQueue = (fileQueue, fileNum, setStatusCallback) => {
+    //check if the outbox queue is empty indicating that the connection with the 
+    //companion is working.
+    getFileOutboxSize().then((value) => {
+      let outboxSize = value.length;
+      console.log("outbox list= " + JSON.stringify(value));
+      console.log("outboxSize = " + outboxSize);
+  
+      if (outboxSize == 0) {
+        //send up to 5 messages to catch up in the queue
+        var sendCnt = 0;
+        while (fileQueue.length && sendCnt < 5) {
+          let messageFile = fileQueue.shift();
+          console.log("messageFile = " + messageFile);
+          sendMessageFile(messageFile, setStatusCallback);
+          sendCnt++;
+        }
+      } else {
+        console.log("file outbox is backed up, wait for it to clear");
+        setStatusCallback(`FILE ${fileNum} QUEUED`);
+      }
+    })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  export const writeMessageToFile = (message, file) => {
     console.log("writing message: " + JSON.stringify(message));
-
-    let file = MESSAGE_FILE_PATH + "message_" + msgFilePoolNum + ".txt"
-
     fs.writeFileSync(file, JSON.stringify(message), "ascii");
+  }
 
-    outbox.enqueueFile(file)
-      .then(ft => {
-        console.log(`Transfer of ${ft.name} successfully queued.`);
-        fs.unlinkSync(file);
-      })
-      .catch(err => {
-        console.log(`Failed to schedule transfer: ${err}`);
-      })
+  export const sendMessageFile = (file, setStatusCallback) => {
+      setStatusCallback("SENDING...");
 
-    setStatusCallback("FILE SENT...");
-}
+      outbox.enqueueFile(file)
+        .then(ft => {
+          console.log(`Transfer of ${ft.name} successfully queued.`);
+        })
+        .catch(err => {
+          console.log(`Failed to schedule transfer: ${err}`);
+        })
+
+      let num = Number(file.split('_').pop());
+      setStatusCallback(`FILE ${num} SENT`);
+  }
+
+  export async function getFileOutboxSize() {
+    return outbox.enumerate();
+  }
+
+  export const deleteAllMatchingFiles = (directory, substr) => {
+    var listDir = fs.listDirSync(directory);
+    var dirIter;
+
+    while((dirIter = listDir.next()) && !dirIter.done) {
+      let filename = dirIter.value;
+      if (filename.indexOf(substr) !== -1) {
+        let file = directory + dirIter.value;
+        deleteFile(file);
+      }
+    }
+  }
+
+  export const deleteFile = (file) => {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+    }  
+  }
+
+  export const listFilesInDirectory = (directory) => {
+    var listDir = fs.listDirSync(directory);
+    var dirIter;
+
+    console.log("files in " + directory);
+    while((dirIter = listDir.next()) && !dirIter.done) {
+      console.log(dirIter.value);
+    }
+  }
 
   function addZero(i) {
     if (i < 10) {i = "0" + i}

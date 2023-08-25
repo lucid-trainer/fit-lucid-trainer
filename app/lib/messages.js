@@ -3,7 +3,7 @@ import { formatResponse} from "../../common/rest";
 
 export const ping = { key: "wakeEvent", value: "wake up!" };
 
-export const initMessageSocket = (messageCommand, responseKey, setStatusCallback, handleResponse) => {   
+export const initMessageSocket = (responseKey, setStatusCallback, handleResponse) => {   
   if(messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     setStatusCallback("CONNECT READY");
   } else {
@@ -17,11 +17,14 @@ export const initMessageSocket = (messageCommand, responseKey, setStatusCallback
 
   // Listen for the onmessage event from companion
   messaging.peerSocket.onmessage = function(evt) {
+    console.log("message from companion: " + JSON.stringify(evt));
     if(evt.data.key === responseKey) {
       let response = formatResponse(evt.data.value);
       handleResponse(response);
       
-      setStatusCallback("RECEIVED");
+      let { filename } = evt.data.value;
+      let num = Number(filename.split('_').pop());
+      setStatusCallback("RECEIVED FILE " + num);
     }  
   }
 }

@@ -1,13 +1,15 @@
 import clock from "clock";
 import document from "document";
+import * as messaging from "messaging";
 
-import { sendMessageInFile, writeToLog, clearLog, formatMessage, getUTCString } from '../lib/files';
+import { Stack } from '../../common/stack';
+import { clearLog, formatMessage, getUTCString, processFileQueue, 
+  writeMessageToFile, deleteFile, deleteAllMatchingFiles, listFilesInDirectory } from '../lib/files';
 import { getHeartRateSensor, getAccelerometer, getGyroscope }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
-import { initMessageSocket, resetMessageSocket, ping } from "../lib/messages";
+import { initMessageSocket, resetMessageSocket } from "../lib/messages";
 import { memory } from "system";
 import sleep from "sleep";
-
 
 /**
  * Session view menu entry. Manages start/stop of sessions, capturing of sleep state data and
@@ -23,16 +25,19 @@ const TOGGLE_VALUE_DELAY_MS = 300;
  */
 const VIEW_RESET_DELAY_MS = 200;
 const REST_INTERVAL = 1;
-const REST_MESSAGE_CMD = "restUpdate";
 const REST_RESPONSE_KEY = "restResponse";
-const MESSAGE_FILE_POOL_SIZE = 100;
+const DIR = "/private/data/"
+const MESSAGE_FILE = "message_";
+const MESSAGE_FILE_POOL_SIZE = 1000;
+const FILE_POOL_AGING_THRESHOLD = 40; //20 minutes
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
 let durationText = undefined;
 let restIntervalStatus = undefined;
-let logArray = [];
-let fileMap = new Map();
+export let logArray = [];
+let fileRecon = new Stack();
+export let fileQueue = [];
 
 let restIntervalId = undefined;
 let restSessionUUID = "";
@@ -68,8 +73,9 @@ export const update = () => {
       accelerometer.start();
       gyroscope.start();
 
-      //clear the log file before new session
+      //clear the log file and private directory before new session
       clearLog();
+      deleteAllMatchingFiles(DIR, MESSAGE_FILE);
 
       disableDreamButton(false);
 
@@ -80,8 +86,7 @@ export const update = () => {
 
       restSessionUUID = getSessionId();
 
-      initMessageSocket(REST_MESSAGE_CMD, 
-        REST_RESPONSE_KEY, updateRestStatusText, handleResponse); 
+      initMessageSocket(REST_RESPONSE_KEY, updateRestStatusText, handleResponse); 
 
       // Post update every x minute
       restIntervalId = setInterval(postUpdate, (REST_INTERVAL * 1000 * 30) + 500); 
@@ -162,10 +167,10 @@ const updateFinishView = () => {
 }
 
 function processDreamButton() {
-  if(dreamClickCnt == 0) {
-    logArray.unshift(formatMessage("DREAM"));
-    writeToLog(logArray);
-  }  
+  // if(dreamClickCnt == 0) {
+  //   logArray.unshift(formatMessage("DREAM"));
+  //   writeToLog(logArray);
+  // }  
 
   if (dreamClickCnt < 5) {
     dreamClickCnt++;
@@ -235,7 +240,7 @@ const disableDreamButton = (disabled) => {
   }
 }
 
-const updateRestStatusText = (status) => {
+export const updateRestStatusText = (status) => {
   let restIntervalText = formatMessage(status);
   if(restIntervalStatus === undefined) {
     restIntervalStatus = document.getElementById("rest-interval");
@@ -245,15 +250,15 @@ const updateRestStatusText = (status) => {
 
 
 const handleResponse = (response) => {
-  logArray.unshift(formatMessage(response));
-  writeToLog(logArray);
-
-  fileMap.set("test", "test");
-  console.log("fileMap=" + JSON.stringify(fileMap));
+  let removeFile = fileRecon.remove(DIR + response.filename);
+  console.log("removeFile=" + removeFile);
+  deleteFile(removeFile);
 }
 
 const postUpdate = () => {
   console.log("JS memory: " + memory.js.used + "/" + memory.js.total);
+
+  listFilesInDirectory(DIR);
 
   //create a copy and reset the global values
   let restMsgCopy = JSON.parse(JSON.stringify(restMsg));
@@ -267,8 +272,20 @@ const postUpdate = () => {
   restMsgCopy.isSleep = sleep.state;
 
   msgFilePoolNum = msgFilePoolNum < MESSAGE_FILE_POOL_SIZE ? msgFilePoolNum + 1 : 0;
+  if(msgFilePoolNum == 0) {
+    //clear anything in the file history
+    fileRecon.length = 0;
+    fileQueue.length = 0;
+    deleteAllMatchingFiles(DIR, MESSAGE_FILE);
+  }
+  
+  let file = DIR + MESSAGE_FILE +  msgFilePoolNum;
+  writeMessageToFile(restMsgCopy, file);
+  fileRecon.push(file);
+  fileQueue.push(file);
+  console.log("filePool=" + JSON.stringify(fileRecon));
 
-  sendMessageInFile(restMsgCopy, msgFilePoolNum, updateRestStatusText)
+  processFileQueue(fileQueue, msgFilePoolNum, updateRestStatusText );
 }
 
 const getSessionId = () => {
@@ -280,5 +297,6 @@ export const init = () => {
   return document
   .location.assign('session.view');
 }
+
 
 

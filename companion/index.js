@@ -5,18 +5,10 @@ import { me as companion} from "companion";
 import { inbox } from "file-transfer";
 
 let messageQueue = [];
-
-const REST_MESSAGE_CMD = "restUpdate";
 const ping = { key: "wakeCompanionEvent", value: "wake up!" };
 const MILLISECONDS_PER_MINUTE = 1000 * 60;
 
-//try to keep the companion up
-setInterval(function(){ 
-    var data = {};
-    data["ping"]=1;
-  }, 10000);
-
-//try to wake up the companion every 5 minutes if the data ping doesn't work
+//try to wake up the companion every 5 minutes
 companion.wakeInterval = 5 * MILLISECONDS_PER_MINUTE;
 
 // Listen for the event
@@ -66,10 +58,11 @@ const restoreSettings = () => {
 
 //send message to device 
 const sendMessageToDevice = () => {
+  console.log("return messageQueue length = " + messageQueue.length); 
   if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     while(messageQueue.length) {
       let message = messageQueue.shift()
-      console.log("message: " + JSON.stringify(message));
+      console.log("message back to device: " + JSON.stringify(message));
       messaging.peerSocket.send(message);
     }
   } else {
