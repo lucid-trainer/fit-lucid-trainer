@@ -30,7 +30,7 @@ export const update = () => {
         tile.getElementById("text").text = `${logArray[info.index]}`;
         let touch = tile.getElementById("touch");
         touch.onclick = function(evt) {
-          console.log(`touched: ${info.index}`);
+          //console.log(`touched: ${info.index}`);
         };
       }
     }

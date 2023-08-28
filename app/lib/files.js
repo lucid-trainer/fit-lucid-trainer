@@ -12,8 +12,6 @@ export const saveSettings = (haptic, duration) => {
     duration: duration,
   };
 
-  console.log("writing settings: " + JSON.stringify(json_data));
-
   fs.writeFileSync(SETTINGS_FILE, json_data, "cbor");
 };
 
@@ -23,7 +21,7 @@ export const getSettings = () => {
     const haptic = json_data.haptic.values[0].value || '';
     const duration = json_data.duration.values[0].value || 0;
     
-    console.log("haptic: " + JSON.stringify(haptic) + " duration: " + JSON.stringify(duration));
+    //console.log("haptic: " + JSON.stringify(haptic) + " duration: " + JSON.stringify(duration));
 
     return {
       haptic: haptic, 
@@ -76,32 +74,28 @@ export const getSettings = () => {
   export const processFileQueue = (fileQueue, fileNum, setStatusCallback) => {
     //check if the outbox queue is empty indicating that the connection with the 
     //companion is working.
-    getFileOutboxSize().then((value) => {
+    outbox.enumerate().then((value) => {
       let outboxSize = value.length;
-      console.log("outbox list= " + JSON.stringify(value));
-      console.log("outboxSize = " + outboxSize);
   
       if (outboxSize == 0) {
         //send up to 5 messages to catch up in the queue
         var sendCnt = 0;
         while (fileQueue.length && sendCnt < 5) {
           let messageFile = fileQueue.shift();
-          console.log("messageFile = " + messageFile);
           sendMessageFile(messageFile, setStatusCallback);
           sendCnt++;
         }
       } else {
-        console.log("file outbox is backed up, wait for it to clear");
+        //console.log("file outbox is backed up, wait for it to clear");
         setStatusCallback(`FILE ${fileNum} QUEUED`);
       }
     })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
   };
 
   export const writeMessageToFile = (message, file) => {
-    console.log("writing message: " + JSON.stringify(message));
     fs.writeFileSync(file, JSON.stringify(message), "ascii");
   }
 
@@ -110,18 +104,14 @@ export const getSettings = () => {
 
       outbox.enqueueFile(file)
         .then(ft => {
-          console.log(`Transfer of ${ft.name} successfully queued.`);
+          //console.log(`Transfer of ${ft.name} successfully queued.`);
         })
         .catch(err => {
-          console.log(`Failed to schedule transfer: ${err}`);
+          console.error(`Failed to schedule transfer: ${err}`);
         })
 
       let num = Number(file.split('_').pop());
       setStatusCallback(`FILE ${num} SENT`);
-  }
-
-  export async function getFileOutboxSize() {
-    return outbox.enumerate();
   }
 
   export const deleteAllMatchingFiles = (directory, substr) => {

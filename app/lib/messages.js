@@ -17,7 +17,6 @@ export const initMessageSocket = (responseKey, setStatusCallback, handleResponse
 
   // Listen for the onmessage event from companion
   messaging.peerSocket.onmessage = function(evt) {
-    console.log("message from companion: " + JSON.stringify(evt));
     if(evt.data.key === responseKey) {
       let response = formatResponse(evt.data.value);
       handleResponse(response);

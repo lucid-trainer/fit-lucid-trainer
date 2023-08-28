@@ -34,13 +34,6 @@ settingsStorage.onchange = (evt) => {
   sendMessageToDevice();
 }
 
-// Listen for the onmessage event from device
-// messaging.peerSocket.onmessage = function(evt) {
-//   if(evt.data && evt.data.command === REST_MESSAGE_CMD) {
-//     postRestMessage(evt.data.msg);
-//   }
-// }
-
 const restoreSettings = () => {
   for (let index = 0; index < settingsStorage.length; index++) {
     const key = settingsStorage.key(index)
@@ -58,15 +51,13 @@ const restoreSettings = () => {
 
 //send message to device 
 const sendMessageToDevice = () => {
-  console.log("return messageQueue length = " + messageQueue.length); 
   if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     while(messageQueue.length) {
       let message = messageQueue.shift()
-      console.log("message back to device: " + JSON.stringify(message));
       messaging.peerSocket.send(message);
     }
   } else {
-    console.log("Error: Connection is not open");
+    console.error("Error: Connection is not open");
   }  
 
 }
@@ -82,13 +73,11 @@ const postRestMessage = (msg, filename) => {
     messageQueue.push(data);
     sendMessageToDevice();
   }).catch(function (e) {
-    console.log("error"); 
-    console.log(e);
+    console.error(e);
   });
 }
 
 async function processAllFiles() {
-  //console.log("starting function processAllFiles");
   try {
     let file;
     while ((file = await inbox.pop())) {
@@ -99,8 +88,7 @@ async function processAllFiles() {
       postRestMessage(message, filename);
     }
   } catch(e) {
-      console.log("error"); 
-      console.log(e);
+      console.error(e);
   }
 }
 

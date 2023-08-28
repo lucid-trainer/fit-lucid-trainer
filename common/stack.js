@@ -25,9 +25,6 @@ export class Stack {
         var retValue = undefined;
         var index = this.items.indexOf(value);
 
-        console.log("value=" + value);
-        console.log("index=" + index);
-
         if (index > -1) {
             retValue = this.items[index];
             this.items.splice(index, 1);

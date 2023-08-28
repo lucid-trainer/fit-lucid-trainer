@@ -47,7 +47,6 @@ export const postMessage = (msg) => {
 export const formatResponse = (resp) => {
   if(ATLAS_REST_URL) {
     let { insertedId, filename } = resp;
-    console.log("response filename=" + filename);
     return {
       "id:": insertedId.slice(0,8),
       "filename": filename

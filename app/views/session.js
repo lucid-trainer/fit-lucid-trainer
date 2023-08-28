@@ -1,6 +1,5 @@
 import clock from "clock";
 import document from "document";
-import * as messaging from "messaging";
 
 import { Stack } from '../../common/stack';
 import { clearLog, formatMessage, getUTCString, processFileQueue, 
@@ -8,7 +7,6 @@ import { clearLog, formatMessage, getUTCString, processFileQueue,
 import { getHeartRateSensor, getAccelerometer, getGyroscope }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
 import { initMessageSocket, resetMessageSocket } from "../lib/messages";
-import { memory } from "system";
 import sleep from "sleep";
 
 /**
@@ -29,7 +27,6 @@ const REST_RESPONSE_KEY = "restResponse";
 const DIR = "/private/data/"
 const MESSAGE_FILE = "message_";
 const MESSAGE_FILE_POOL_SIZE = 1000;
-const FILE_POOL_AGING_THRESHOLD = 40; //20 minutes
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
@@ -167,11 +164,6 @@ const updateFinishView = () => {
 }
 
 function processDreamButton() {
-  // if(dreamClickCnt == 0) {
-  //   logArray.unshift(formatMessage("DREAM"));
-  //   writeToLog(logArray);
-  // }  
-
   if (dreamClickCnt < 5) {
     dreamClickCnt++;
   }
@@ -251,14 +243,12 @@ export const updateRestStatusText = (status) => {
 
 const handleResponse = (response) => {
   let removeFile = fileRecon.remove(DIR + response.filename);
-  console.log("removeFile=" + removeFile);
   deleteFile(removeFile);
 }
 
 const postUpdate = () => {
-  console.log("JS memory: " + memory.js.used + "/" + memory.js.total);
-
-  listFilesInDirectory(DIR);
+  //console.log("JS memory: " + memory.js.used + "/" + memory.js.total);
+  //listFilesInDirectory(DIR);
 
   //create a copy and reset the global values
   let restMsgCopy = JSON.parse(JSON.stringify(restMsg));
@@ -283,7 +273,6 @@ const postUpdate = () => {
   writeMessageToFile(restMsgCopy, file);
   fileRecon.push(file);
   fileQueue.push(file);
-  console.log("filePool=" + JSON.stringify(fileRecon));
 
   processFileQueue(fileQueue, msgFilePoolNum, updateRestStatusText );
 }
