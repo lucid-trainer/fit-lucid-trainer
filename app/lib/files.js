@@ -86,7 +86,6 @@ export const getSettings = () => {
           sendCnt++;
         }
       } else {
-        //console.log("file outbox is backed up, wait for it to clear");
         setStatusCallback(`FILE ${fileNum} QUEUED`);
       }
     })
@@ -104,7 +103,7 @@ export const getSettings = () => {
 
       outbox.enqueueFile(file)
         .then(ft => {
-          //console.log(`Transfer of ${ft.name} successfully queued.`);
+          console.log(`Transfer of ${ft.name} successfully queued.`);
         })
         .catch(err => {
           console.error(`Failed to schedule transfer: ${err}`);

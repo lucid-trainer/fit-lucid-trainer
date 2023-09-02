@@ -73,6 +73,7 @@ export const update = () => {
       //clear the log file and private directory before new session
       clearLog();
       deleteAllMatchingFiles(DIR, MESSAGE_FILE);
+      msgFilePoolNum = 0;
 
       disableDreamButton(false);
 
@@ -92,7 +93,7 @@ export const update = () => {
 
     }, TOGGLE_VALUE_DELAY_MS);
   });
-};
+ };
 
 const resetSession = () => {
   /* Reset internal session variables */
@@ -128,27 +129,31 @@ const sessionDurationUpdate = () => {
   durationText.text = [`0${hrs}`.slice(-2), `0${mins}`.slice(-2), `0${secs}`.slice(-2)].join(':');
 }
 
-const updateFinishView = () => {
+const sessionUpdateView = () => {
   /* When this view exits, we want to restore the document.onbeforeunload handler */
   document.onunload = () => {
     document.onbeforeunload = sessionBackswipeCallback;
   }
 
-  /* Clear the session log */
-  logArray.length = 0;
-  
   /* Hitting the play button will trigger the sound file to play in the android app and 
      go back to the previous view */
   document.getElementById("btn-play").addEventListener("click", () => {
-    addEvent("play.sound");
+    let toggleValues = getToggleValues();
+    addEvent("playsound." + toggleValues);
     document.history.back(); /* We know that this is the topmost view */
     document.onbeforeunload = sessionBackswipeCallback;
   });
 
+  /* Cycling through volume settings will update the master volume in the android app.  The event
+     will end up matching the last selected */
   let volumeCycle = document.getElementById("volume-cycle");
+  volumeCycle.value = 3; //set default when entering view
+
   volumeCycle.addEventListener("click", () => {
-    var volumeNum = new Number(volumeCycle.value);
-    volumeNum++;
+    let cycleVal = new Number(volumeCycle.value);
+    
+    //0=2, 1=3, 2=4, 3=5, 4=6, 5=7, 6=8, 7=1
+    let volumeNum = cycleVal == 7 ? 1 : cycleVal + 2;
     addEvent("volume." +  volumeNum);
   });
 
@@ -210,7 +215,7 @@ const sessionBackswipeCallback = (evt) => {
 
   /* leave some time for the animation to happen, then load the new view */
   setTimeout(() => {
-    document.location.assign('session-finish.view').then(updateFinishView).catch((err) => {
+    document.location.assign('session-update.view').then(sessionUpdateView).catch((err) => {
       console.error(`Error loading finish view - ${err.message}`);
     });
   }, VIEW_RESET_DELAY_MS);
@@ -288,4 +293,21 @@ export const init = () => {
 }
 
 
+/* get the sound setting toggle values */
+const getToggleValues = () => {
+  let ssildValue = document.getElementById("ssild-toggle").value;
+  let mildValue = document.getElementById("mild-toggle").value;
+  let wildValue = document.getElementById("wild-toggle").value;
+  let toggleValues = ssildValue ? "s," : "";
+  if(mildValue) {
+    toggleValues += "m,";
+  }
+  if(wildValue) {
+    toggleValues += "w,";
+  }
 
+  //console.log("ssildValue=" + ssildValue + ",mildValue=" 
+  //  + mildValue + ",wildValue=" + wildValue + ",return=" + toggleValues)
+
+  return toggleValues;
+}

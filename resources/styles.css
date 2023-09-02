@@ -30,8 +30,6 @@
 .text-button.secondary  { y: 100%-50; }
 .text-button.bottom     { y: 100%-60; }
 
-.toggle-switch          { x: 100%-70; }
-
 .uppercase              { text-transform: uppercase; }
 
 #btn-play #text         { text-buffer: "Play Meditation"; }
@@ -164,12 +162,24 @@
 
 /* end log list item */
 
+/* session-update elements */
+#label-ssild { text-buffer: "ssild"; }
+#label-mild { text-buffer: "mild"; }
+#label-wild { text-buffer: "wild"; }
+
+.toggle-container {
+  width: 100%;
+  height: 60;
+  x: 0;
+  y: 30%-25;
+}
+
 /* start cycle view */
 #cycle-container {
   width: 100%;
-  height: 80;
+  height: 50;
   x: 0;
-  y: 50%-50;
+  y: 65%-65;
 }
 
 #cycle-background {
