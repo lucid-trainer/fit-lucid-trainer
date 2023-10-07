@@ -1,0 +1,55 @@
+<svg id="background" >
+  <rect x="0"   y="0" width="100%" height="100%" fill="#000000" />
+  <animate attributeName="opacity" from="0" to="1" begin="load" dur="0.5" easing="ease-in-out" />
+  <textarea id="description" class="textarea-msg">
+    Play the guided meditation
+  </textarea>
+  <svg class="toggle-container application-fill">
+    <svg class="row">
+      <text x="0%" id="label-ssild" class="defaultText" />
+      <svg x="12%">
+        <use id="ssild-toggle" href="#toggle-switch" class="toggle-switch" />
+      </svg>
+      <text x="35%" id="label-mild" class="defaultText" />
+      <svg x="46%">
+        <use id="mild-toggle" href="#toggle-switch" class="toggle-switch" />
+      </svg>
+      <text x="69%" id="label-wild" class="defaultText" />
+      <svg x="79%-2">
+        <use id="wild-toggle" href="#toggle-switch" class="toggle-switch" />
+      </svg>  
+      <rect class="line" />
+    </svg>  
+  </svg>
+ <svg id="cycle-container">
+    <rect id="cycle-background" class="application-fill" />
+    <use id="volume-cycle" href="#cycleview" pointer-events = "visible">
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 10%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 20%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 30%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 40%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 50%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 60%</text>
+      </use>
+      <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 70%</text>
+      </use>
+        <use href="#cycleview-item" class="cycle-item">
+        <text>Volume 80%</text>
+      </use>
+    </use>
+  </svg>
+  <use id="btn-play" href="#text-button" class="text-button primary application-fill" />
+  <use id="btn-cancel" href="#text-button" class="text-button secondary application-fill" />
+</svg>

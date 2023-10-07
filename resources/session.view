@@ -9,7 +9,9 @@
   <svg class="container application-fill">
     <svg class="row">
       <text id="label-session" class="defaultText" />
-      <use id="session-toggle" href="#toggle-switch" class="toggle-switch" />
+      <svg x="100%-70">
+        <use id="session-toggle" href="#toggle-switch" class="toggle-switch" />
+      </svg>  
       <rect class="line" />
     </svg>
   </svg>

@@ -1,56 +1,35 @@
 import * as messaging from "messaging";
 import { formatResponse} from "../../common/rest";
 
-const ping = { key: "wakeEvent", value: "wake up!" };
+export const ping = { key: "wakeEvent", value: "wake up!" };
 
-export const sendMessageQueue = (messageQueue, messageCommand, setStatusCallback) => {
-  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
-    setStatusCallback("SENDING...");
-    while(messageQueue.length) {
-      let message = messageQueue.shift()
-      console.log("rest call request: " + JSON.stringify(message));
-      messaging.peerSocket.send({
-        command: messageCommand,
-        msg: message
-      });
-    }
-  } else {
-    setStatusCallback("...QUEING");
-    try {
-      //maybe if ping it the connection with the companion will open
-      messaging.peerSocket.send(ping);
-    } catch {
-      //do nothing
-    }  
-  }
-    
-}
-
-export const initMessageSocket = (messageQueue, messageCommand, responseKey, setStatusCallback, logResponse) => {   
+export const initMessageSocket = (responseKey, setStatusCallback, handleResponse) => {   
   if(messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
     setStatusCallback("CONNECT READY");
   } else {
     setStatusCallback("CONNECT PEND");
   }
 
-  // Begin processing the queue when a connection opens
-  messaging.peerSocket.open = function() {
-    sendMessageQueue(messageQueue, messageCommand, setStatusCallback);
+  // Send a ping when a connection opens
+  messaging.peerSocket.onopen = function() {
+    messaging.peerSocket.send(ping);
   }
 
   // Listen for the onmessage event from companion
   messaging.peerSocket.onmessage = function(evt) {
     if(evt.data.key === responseKey) {
       let response = formatResponse(evt.data.value);
-      logResponse(response);
+      handleResponse(response);
       
-      setStatusCallback("RECEIVED");
+      let { filename } = evt.data.value;
+      let num = Number(filename.split('_').pop());
+      setStatusCallback("RECEIVED FILE " + num);
     }  
   }
 }
 
 export const resetMessageSocket = () => {
-  messaging.peerSocket.open = undefined;
+  messaging.peerSocket.onopen = undefined;
   messaging.peerSocket.onmessage = undefined;
 }
 
