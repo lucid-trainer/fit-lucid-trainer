@@ -16,9 +16,6 @@ An example of the REST payload posted to the server, which will be returned in t
 
 ```
 {
-  "_id": {
-    "$oid": "6520fe66c6b358e5d5126a57"
-  },
   "hr": "54",
   "hrVar": "0.4039",
   "hrArray": "53,53,54,54,53,53,53,53,53,53,53,53,53,53,53,54,54,54,54,54,54,54,54,55,55,55,54,54,54,54",
