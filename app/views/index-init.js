@@ -6,7 +6,7 @@ import document from "document";
  */
 const buttonCallbacks = [
     ["session-view/start",  () => import("./session")],
-    ["log-view/start",   () => import("./log")],
+    ["train-view/start",   () => import("./train")],
   ];
   
 /**

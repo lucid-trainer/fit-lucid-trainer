@@ -12,8 +12,8 @@
         <set href="text" attributeName="text-buffer" to="Session" />
         <set href="logo" attributeName="href" to="icons/bed.png" />
       </use>
-      <use id="log-view" href="#my-tile-list-item" class="tile-list-item">
-        <set href="text" attributeName="text-buffer" to="Log" />
+      <use id="train-view" href="#my-tile-list-item" class="tile-list-item">
+        <set href="text" attributeName="text-buffer" to="Training" />
         <set href="logo" attributeName="href" to="icons/log.png" />
       </use>
     </use>

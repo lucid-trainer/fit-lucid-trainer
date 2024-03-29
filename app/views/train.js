@@ -1,0 +1,116 @@
+import clock from "clock";
+import document from "document";
+
+import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
+import { vibrationRepeater } from "../lib/haptics";
+import { formatMessage} from '../lib/files';
+
+/**
+ * Training view menu entry. Manages start/stop of training session, captures haptic events from API
+ */
+
+/**
+ * Delta between the toggle click event is sent out, and the toggle value actually updates.
+ **/
+const TOGGLE_VALUE_DELAY_MS = 300;
+const REST_INTERVAL = 1;
+const VIBRATION_REPEAT = 3;
+
+let sessionStart = undefined;
+let sessionResult = "00:00:00"
+let durationText = undefined;
+let restIntervalStatus = undefined;
+export let logArray = [];
+export let fileQueue = [];
+
+let restIntervalId = undefined;
+
+export const update = () => {
+  const trainToggle = document.getElementById("train-toggle");
+
+  /* Display of the current session time. */
+  durationText = document.getElementById("duration");
+  durationText.text = sessionResult;
+
+  restIntervalStatus = document.getElementById("rest-interval");
+
+  /* Session start / stop logic */
+  trainToggle.addEventListener("click", () => {
+    setTimeout(() => {
+      if (trainToggle.value == false) {
+        resetSession();
+        return;
+      }
+
+
+      sessionStart = new Date() / 1000;
+      durationText.text = "00:00:00";
+      clock.granularity = "seconds";
+      clock.ontick = sessionDurationUpdate;
+
+      initMessageSocket(updateRestStatusText, handleResponse); 
+
+      // Post update every x minute
+      restIntervalId = setInterval(getUpdate, (REST_INTERVAL * 1000 * 30) + 500); 
+
+    }, TOGGLE_VALUE_DELAY_MS);
+  });
+ };
+
+const resetSession = () => {
+  /* Reset internal session variables */
+  sessionStart = undefined;
+  clock.ontick = undefined;
+  
+  if (typeof restIntervalId !== 'undefined') {
+    clearInterval(restIntervalId);
+    restIntervalId = undefined;
+  }
+
+  updateRestStatusText({msg: ""});
+  resetMessageSocket();
+}
+
+const sessionDurationUpdate = () => {
+  if (durationText === undefined) {
+    return;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const totalSeconds = now - sessionStart;
+  const hrs = Math.floor(totalSeconds/3600);
+  const mins = Math.floor((totalSeconds - hrs*3600)/60);
+  const secs = Math.floor(totalSeconds - (hrs*3600 + mins*60));
+
+  durationText.text = [`0${hrs}`.slice(-2), `0${mins}`.slice(-2), `0${secs}`.slice(-2)].join(':');
+}
+
+//updates the REST status display and initiates a haptic event if found
+export const updateRestStatusText = (status) => {
+  //console.log("updateRestStatus=" + JSON.stringify(status))
+  let restIntervalText = formatMessage(status.msg);
+  if(restIntervalStatus === undefined) {
+    restIntervalStatus = document.getElementById("rest-interval");
+  }
+  restIntervalStatus.text = restIntervalText;
+
+  let deviceEvent = status.event;
+  if(deviceEvent) {
+    //console.log("deviceEvent=" + deviceEvent)
+    vibrationRepeater("nudge-max", VIBRATION_REPEAT, 1000)
+  }
+}
+
+const handleResponse = (response) => {
+  //nothing for now in training mode
+}
+
+const getUpdate = () => {
+  sendQueryMessage( updateRestStatusText );
+}
+
+export const init = () => {
+  return document
+  .location.assign('train.view');
+}
+

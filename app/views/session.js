@@ -2,11 +2,13 @@ import clock from "clock";
 import document from "document";
 
 import { Stack } from '../../common/stack';
-import { clearLog, formatMessage, getUTCString, processFileQueue, 
-  writeMessageToFile, deleteFile, deleteAllMatchingFiles, listFilesInDirectory } from '../lib/files';
-import { getHeartRateSensor, getAccelerometer, getGyroscope }  from '../lib/sensors';
+import { formatMessage, getUTCString, processFileQueue, 
+  writeMessageToFile, deleteFile, deleteAllMatchingFiles } from '../lib/files';
+import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
-import { initMessageSocket, resetMessageSocket } from "../lib/messages";
+import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
+import { vibrationRepeater } from "../lib/haptics";
+import {mean} from "scientific";
 import sleep from "sleep";
 
 /**
@@ -23,10 +25,10 @@ const TOGGLE_VALUE_DELAY_MS = 300;
  */
 const VIEW_RESET_DELAY_MS = 200;
 const REST_INTERVAL = 1;
-const REST_RESPONSE_KEY = "restResponse";
 const DIR = "/private/data/"
 const MESSAGE_FILE = "message_";
 const MESSAGE_FILE_POOL_SIZE = 1000;
+const VIBRATION_REPEAT = 3;
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
@@ -43,7 +45,6 @@ let dreamClickCnt = 0;
 let msgFilePoolNum = 0;
 
 let accelerometer = getAccelerometer(restMsg, postUpdate);
-let gyroscope = getGyroscope(restMsg, postUpdate);
 let hrm = getHeartRateSensor(restMsg, postUpdate);
 
 export const update = () => {
@@ -68,10 +69,8 @@ export const update = () => {
       //start the sensor readings
       hrm.start();
       accelerometer.start();
-      gyroscope.start();
 
       //clear the log file and private directory before new session
-      clearLog();
       deleteAllMatchingFiles(DIR, MESSAGE_FILE);
       msgFilePoolNum = 0;
 
@@ -84,7 +83,7 @@ export const update = () => {
 
       restSessionUUID = getSessionId();
 
-      initMessageSocket(REST_RESPONSE_KEY, updateRestStatusText, handleResponse); 
+      initMessageSocket(updateRestStatusText, handleResponse); 
 
       // Post update every x minute
       restIntervalId = setInterval(postUpdate, (REST_INTERVAL * 1000 * 30) + 500); 
@@ -237,12 +236,18 @@ const disableDreamButton = (disabled) => {
   }
 }
 
+//updates the REST status display and initiates a haptic event if found
 export const updateRestStatusText = (status) => {
-  let restIntervalText = formatMessage(status);
+  let restIntervalText = formatMessage(status.msg);
   if(restIntervalStatus === undefined) {
     restIntervalStatus = document.getElementById("rest-interval");
   }
   restIntervalStatus.text = restIntervalText;
+
+  let deviceEvent = status.event;
+  if(deviceEvent) {
+    vibrationRepeater("nudge", VIBRATION_REPEAT, 1000)
+  }
 }
 
 
@@ -266,6 +271,16 @@ const postUpdate = () => {
   restMsgCopy.timestamp = getUTCString(now);
   restMsgCopy.isSleep = sleep.state;
 
+  //process sensor data
+  let moveArray = new Float32Array(restMsgCopy.moveArray);
+  delete restMsgCopy['moveArray'];
+
+  let moveZArray = new Float32Array(restMsgCopy.moveZArray);
+  delete restMsgCopy['moveZArray'];
+
+  restMsgCopy.move = mean(moveArray).toFixed(2);
+  restMsgCopy.moveZ = mean(moveZArray).toFixed(2);
+
   msgFilePoolNum = msgFilePoolNum < MESSAGE_FILE_POOL_SIZE ? msgFilePoolNum + 1 : 0;
   if(msgFilePoolNum == 0) {
     //clear anything in the file history
@@ -280,6 +295,7 @@ const postUpdate = () => {
   fileQueue.push(file);
 
   processFileQueue(fileQueue, msgFilePoolNum, updateRestStatusText );
+  sendQueryMessage( updateRestStatusText );
 }
 
 const getSessionId = () => {
