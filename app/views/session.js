@@ -29,6 +29,7 @@ const DIR = "/private/data/"
 const MESSAGE_FILE = "message_";
 const MESSAGE_FILE_POOL_SIZE = 1000;
 const VIBRATION_REPEAT = 3;
+const VIBRATION_REPEAT_DELAY_MS = 30000;
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
@@ -43,6 +44,7 @@ let restSessionUUID = "";
 let restMsg = {}; //the current object to capture state
 let dreamClickCnt = 0;
 let msgFilePoolNum = 0;
+let acceptAppEvents = true;
 
 let accelerometer = getAccelerometer(restMsg, postUpdate);
 let hrm = getHeartRateSensor(restMsg, postUpdate);
@@ -56,6 +58,7 @@ export const update = () => {
   durationText.text = sessionResult;
 
   restIntervalStatus = document.getElementById("rest-interval");
+  acceptAppEvents = true;
 
   /* Session start / stop logic */
   sessionToggle.addEventListener("click", () => {
@@ -83,7 +86,7 @@ export const update = () => {
 
       restSessionUUID = getSessionId();
 
-      initMessageSocket(updateRestStatusText, handleResponse); 
+      initMessageSocket(handleRestResponse, handleResponse); 
 
       // Post update every x minute
       restIntervalId = setInterval(postUpdate, (REST_INTERVAL * 1000 * 30) + 500); 
@@ -99,6 +102,7 @@ const resetSession = () => {
   sessionStart = undefined;
   clock.ontick = undefined;
   restSessionUUID = "";
+  acceptAppEvents = true;
   
   if (typeof restIntervalId !== 'undefined') {
     clearInterval(restIntervalId);
@@ -110,7 +114,7 @@ const resetSession = () => {
   accelerometer.stop();
 
   disableDreamButton(true);
-  updateRestStatusText("");
+  handleRestResponse("");
   resetMessageSocket();
 }
 
@@ -237,17 +241,38 @@ const disableDreamButton = (disabled) => {
 }
 
 //updates the REST status display and initiates a haptic event if found
-export const updateRestStatusText = (status) => {
+export const handleRestResponse = (status) => {
   let restIntervalText = formatMessage(status.msg);
   if(restIntervalStatus === undefined) {
     restIntervalStatus = document.getElementById("rest-interval");
   }
   restIntervalStatus.text = restIntervalText;
 
-  let deviceEvent = status.event;
-  if(deviceEvent) {
-    vibrationRepeater("nudge", VIBRATION_REPEAT, 1000)
+  //console.log("status=" + JSON.stringify(status));
+
+  let deviceEvent = status.eventType;
+  let intensity = status.intensity;
+
+  //check for events back from the android device
+  if(deviceEvent && acceptAppEvents) {
+    acceptAppEvents = false;
+
+    let vibrationType = intensity > 2 ? "nudge" : "confirmation";
+    let counter = intensity == 1 ? 1 : 2;
+
+    let repeater = setInterval(()=>{ 
+      vibrationRepeater(vibrationType, VIBRATION_REPEAT, 1000);
+      if (!--counter) {
+        clearInterval(repeater);
+
+        setTimeout(() => {
+          acceptAppEvents = true;
+        }, VIBRATION_REPEAT_DELAY_MS);
+      } 
+    }, VIBRATION_REPEAT_DELAY_MS);
+
   }
+
 }
 
 
@@ -294,8 +319,8 @@ const postUpdate = () => {
   fileRecon.push(file);
   fileQueue.push(file);
 
-  processFileQueue(fileQueue, msgFilePoolNum, updateRestStatusText );
-  sendQueryMessage( updateRestStatusText );
+  processFileQueue(fileQueue, msgFilePoolNum, handleRestResponse );
+  sendQueryMessage( handleRestResponse );
 }
 
 const getSessionId = () => {

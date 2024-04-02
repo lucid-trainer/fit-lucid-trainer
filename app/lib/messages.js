@@ -35,11 +35,12 @@ export const initMessageSocket = (setStatusCallback, handleResponse) => {
           msg: "RECEIVED FILE " + num
         });
     } else if(evt.data.key === MSG_FROM_DEVICE_KEY) {
-      let { eventType } = evt.data.value;
+      let { eventType, intensity } = evt.data.value;
       //console.log("data from device=" + JSON.stringify(evt.data.value) + " -END-");
       setStatusCallback({
         msg: "RECEIVED FROM DEVICE",
-        event: eventType 
+        eventType,
+        intensity
       })
     }
   }  

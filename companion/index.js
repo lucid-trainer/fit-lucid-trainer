@@ -112,10 +112,13 @@ const getMessageFromRest = (msg) => {
   postMessage(msg, FIND_ACTION)
   .then(response => {
     if(response.documents && response.documents.length == 1) {
-      let { eventType } = response.documents[0];
+      let { eventType, intensity } = response.documents[0];
       const data = {
         key: MSG_FROM_DEVICE_KEY,
-        value: {eventType: eventType},
+        value: {
+          eventType,
+          intensity
+        },
       }
       messageQueue.push(data);
       sendMessageToDevice();
