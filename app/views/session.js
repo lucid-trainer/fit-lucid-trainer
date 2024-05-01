@@ -34,6 +34,7 @@ const VIBRATION_REPEAT_DELAY_MS = 30000;
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
 let durationText = undefined;
+let timeText = undefined;
 let restIntervalStatus = undefined;
 export let logArray = [];
 let fileRecon = new Stack();
@@ -58,6 +59,8 @@ export const update = () => {
   durationText.text = sessionResult;
 
   restIntervalStatus = document.getElementById("rest-interval");
+  timeText = document.getElementById("time");
+
   acceptAppEvents = true;
 
   /* Session start / stop logic */
@@ -81,6 +84,8 @@ export const update = () => {
 
       sessionStart = new Date() / 1000;
       durationText.text = "00:00:00";
+      timeText.text = "";
+      restIntervalStatus.text = "";
       clock.granularity = "seconds";
       clock.ontick = sessionDurationUpdate;
 
@@ -142,22 +147,24 @@ const sessionUpdateView = () => {
      go back to the previous view */
   document.getElementById("btn-play").addEventListener("click", () => {
     let toggleValues = getToggleValues();
-    addEvent("playsound." + toggleValues);
+    if(toggleValues && toggleValues != "") {
+      addEvent("playsound." + toggleValues);
+    }  
     document.history.back(); /* We know that this is the topmost view */
     document.onbeforeunload = sessionBackswipeCallback;
   });
 
-  /* Cycling through volume settings will update the master volume in the android app.  The event
+  /* Cycling through podcast settings will update the podcast in the android app.  The event
      will end up matching the last selected */
-  let volumeCycle = document.getElementById("volume-cycle");
-  volumeCycle.value = 3; //set default when entering view
+  let podcastCycle = document.getElementById("podcast-cycle");
+  podcastCycle.value = 0; //set default when entering view
 
-  volumeCycle.addEventListener("click", () => {
-    let cycleVal = new Number(volumeCycle.value);
-    
-    //0=2, 1=3, 2=4, 3=5, 4=6, 5=7, 6=8, 7=1
-    let volumeNum = cycleVal == 7 ? 1 : cycleVal + 2;
-    addEvent("volume." +  volumeNum);
+  podcastCycle.addEventListener("click", () => {
+    let cycleVal = new Number(podcastCycle.value);
+
+    //0=2, 1=3, 2=4, 3=5, 4=1
+    let podcastNum = cycleVal == 4 ? 1 : cycleVal + 2;
+    addEvent("podcast." +  podcastNum);
   });
 
   /**
@@ -242,11 +249,21 @@ const disableDreamButton = (disabled) => {
 
 //updates the REST status display and initiates a haptic event if found
 export const handleRestResponse = (status) => {
-  let restIntervalText = formatMessage(status.msg);
+  let restIntervalText = status.msg;
+
+  if(restIntervalText === undefined) {
+    restIntervalText = "";
+  }
+
   if(restIntervalStatus === undefined) {
     restIntervalStatus = document.getElementById("rest-interval");
   }
   restIntervalStatus.text = restIntervalText;
+
+  if(timeText === undefined) {
+    timeText == document.getElementById("timeText");
+  }
+  timeText.text = formatMessage("");
 
   //console.log("status=" + JSON.stringify(status));
 

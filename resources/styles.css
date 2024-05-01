@@ -32,14 +32,13 @@
 
 .uppercase              { text-transform: uppercase; }
 
-#btn-play #text         { text-buffer: "Play Meditation"; }
+#btn-play #text         { text-buffer: "Play Routine"; }
 #btn-cancel #text       { text-buffer: "Cancel"; }
 #btn-prev #text         { text-buffer: "Previous"; }
 #btn-next #text         { text-buffer: "Next"; }
 
 #duration               { text-buffer: "00:00:000" }
 #label-session          { text-buffer: "Session active"; }
-#label-volume          { text-buffer: "volume"; }
 
 .defaultText {
   font-size: 20;
@@ -107,6 +106,15 @@
   x: 50%;
   y: 40%;
   width: 80%;
+  text-anchor: middle;
+}
+
+.time {
+  x: 50%;
+  y: 55%;
+  width: 80%;
+  font-size: 32;
+  font-weight: bold;
   text-anchor: middle;
 }
 

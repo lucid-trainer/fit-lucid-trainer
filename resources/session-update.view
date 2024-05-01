@@ -23,30 +23,21 @@
   </svg>
  <svg id="cycle-container">
     <rect id="cycle-background" class="application-fill" />
-    <use id="volume-cycle" href="#cycleview" pointer-events = "visible">
+    <use id="podcast-cycle" href="#cycleview" pointer-events = "visible">
       <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 10%</text>
+        <text>No Podcast</text>
       </use>
       <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 20%</text>
+        <text>Podcast 1</text>
       </use>
       <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 30%</text>
+        <text>Podcast 2</text>
       </use>
       <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 40%</text>
+        <text>Podcast 3</text>
       </use>
       <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 50%</text>
-      </use>
-      <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 60%</text>
-      </use>
-      <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 70%</text>
-      </use>
-        <use href="#cycleview-item" class="cycle-item">
-        <text>Volume 80%</text>
+        <text>Podcast 4</text>
       </use>
     </use>
   </svg>

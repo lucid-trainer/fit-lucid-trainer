@@ -28,7 +28,7 @@ export const getSettings = () => {
   };
 
   export const formatMessage = (message) => {
-    if(message) {
+    if(message || message === "") {
       let d = new Date();
       let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
       return timeString + " " + message;
