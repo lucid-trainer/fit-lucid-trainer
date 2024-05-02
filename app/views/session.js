@@ -7,7 +7,7 @@ import { formatMessage, getUTCString, processFileQueue,
 import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
 import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
-import { vibrationRepeater } from "../lib/haptics";
+import { getVibrationType, vibrationRepeater } from "../lib/haptics";
 import {mean} from "scientific";
 import sleep from "sleep";
 
@@ -274,8 +274,8 @@ export const handleRestResponse = (status) => {
   if(deviceEvent && acceptAppEvents) {
     acceptAppEvents = false;
 
-    let vibrationType = intensity > 2 ? "nudge" : "confirmation";
-    let counter = intensity == 1 ? 1 : 2;
+    let vibrationType = getVibrationType(intensity)
+    let counter = intensity < 3 ? 1 : 2;
 
     let repeater = setInterval(()=>{ 
       vibrationRepeater(vibrationType, VIBRATION_REPEAT, 1000);

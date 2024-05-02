@@ -2,7 +2,7 @@ import clock from "clock";
 import document from "document";
 
 import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
-import { vibrationRepeater } from "../lib/haptics";
+import { getVibrationType, vibrationRepeater } from "../lib/haptics";
 import { formatMessage} from '../lib/files';
 
 /**
@@ -104,8 +104,8 @@ export const handleRestResponse = (status) => {
   if(deviceEvent && acceptAppEvents) {
     acceptAppEvents = false;
 
-    let vibrationType = intensity > 2 ? "nudge-max" : "nudge";
-    let counter = intensity == 1 ? 1 : 2;
+    let vibrationType = getVibrationType(intensity)
+    let counter = intensity < 3 ? 1 : 2;
 
     let repeater = setInterval(()=>{ 
       vibrationRepeater(vibrationType, VIBRATION_REPEAT, 1000);
