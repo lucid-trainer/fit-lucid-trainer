@@ -6,6 +6,7 @@
   </textarea>
   <text id="rest-interval" class="alert-interval-msg defaultText" />
   <text id="duration" class="duration-msg defaultText" />
+  <text id="time" class="time defaultText" />
   <svg class="container application-fill">
     <svg class="row">
       <text id="label-session" class="defaultText" />

@@ -57,7 +57,9 @@ export const getSettings = () => {
           sendCnt++;
         }
       } else {
-        setStatusCallback(`FILE ${fileNum} QUEUED`);
+        setStatusCallback({
+          msg: `FILE ${fileNum} QUEUED`
+        });
       }
     })
       .catch((err) => {

@@ -7,7 +7,7 @@ import { formatMessage, getUTCString, processFileQueue,
 import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
 import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
-import { getVibrationType, vibrationRepeater } from "../lib/haptics";
+import { getVibrationCount, getVibrationType, getVibrationLoopCount, vibrationRepeater } from "../lib/haptics";
 import {mean} from "scientific";
 import sleep from "sleep";
 
@@ -28,8 +28,8 @@ const REST_INTERVAL = 1;
 const DIR = "/private/data/"
 const MESSAGE_FILE = "message_";
 const MESSAGE_FILE_POOL_SIZE = 1000;
-const VIBRATION_REPEAT = 3;
-const VIBRATION_REPEAT_DELAY_MS = 30000;
+const VIBRATION_REPEAT_DELAY_MS = 15000;
+const VIBRATION_TIMEOUT_DELAY_MS = 30000;
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
@@ -271,20 +271,22 @@ export const handleRestResponse = (status) => {
   let intensity = status.intensity;
 
   //check for events back from the android device
-  if(deviceEvent && acceptAppEvents) {
+  if(deviceEvent && intensity > 0 && acceptAppEvents) {
     acceptAppEvents = false;
 
-    let vibrationType = getVibrationType(intensity)
-    let counter = intensity < 3 ? 1 : 2;
+    let vibrationType = getVibrationType(intensity);
+    let vibrationRepeat = getVibrationCount(intensity);
+    let loopCount = getVibrationLoopCount(intensity);
 
     let repeater = setInterval(()=>{ 
-      vibrationRepeater(vibrationType, VIBRATION_REPEAT, 1000);
-      if (!--counter) {
+      vibrationRepeater(vibrationType, vibrationRepeat, 1000);
+      if (!--loopCount) {
         clearInterval(repeater);
 
+        //wait a bit before accepting new events
         setTimeout(() => {
           acceptAppEvents = true;
-        }, VIBRATION_REPEAT_DELAY_MS);
+        }, VIBRATION_TIMEOUT_DELAY_MS);
       } 
     }, VIBRATION_REPEAT_DELAY_MS);
 

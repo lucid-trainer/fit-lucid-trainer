@@ -2,7 +2,7 @@ import clock from "clock";
 import document from "document";
 
 import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
-import { getVibrationType, vibrationRepeater } from "../lib/haptics";
+import { getVibrationLoopCount, getVibrationCount, getVibrationType, vibrationRepeater } from "../lib/haptics";
 import { formatMessage} from '../lib/files';
 
 /**
@@ -14,13 +14,14 @@ import { formatMessage} from '../lib/files';
  **/
 const TOGGLE_VALUE_DELAY_MS = 300;
 const REST_INTERVAL = 1;
-const VIBRATION_REPEAT = 3;
-const VIBRATION_REPEAT_DELAY_MS = 30000;
+const VIBRATION_REPEAT_DELAY_MS = 15000;
+const VIBRATION_TIMEOUT_DELAY_MS = 30000;
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
 let durationText = undefined;
 let restIntervalStatus = undefined;
+let timeText = undefined;
 let acceptAppEvents = true;
 
 export let logArray = [];
@@ -30,6 +31,7 @@ let restIntervalId = undefined;
 
 export const update = () => {
   const trainToggle = document.getElementById("train-toggle");
+  timeText = document.getElementById("time");
 
   /* Display of the current session time. */
   durationText = document.getElementById("duration");
@@ -47,6 +49,7 @@ export const update = () => {
 
       sessionStart = new Date() / 1000;
       durationText.text = "00:00:00";
+      timeText.text = "";
       clock.granularity = "seconds";
       clock.ontick = sessionDurationUpdate;
       acceptAppEvents = true;
@@ -96,25 +99,32 @@ export const handleRestResponse = (status) => {
     restIntervalStatus = document.getElementById("rest-interval");
   }
   restIntervalStatus.text = restIntervalText;
+  
+  if(timeText === undefined) {
+    timeText == document.getElementById("timeText");
+  }
+  timeText.text = formatMessage("");
 
   let deviceEvent = status.eventType;
   let intensity = status.intensity;
 
   //check for events back from the android device
-  if(deviceEvent && acceptAppEvents) {
+  if(deviceEvent && intensity > 0 && acceptAppEvents) {
     acceptAppEvents = false;
 
     let vibrationType = getVibrationType(intensity)
-    let counter = intensity < 3 ? 1 : 2;
+    let vibrationRepeat = getVibrationCount(intensity)
+    let loopCount = getVibrationLoopCount(intensity)
 
     let repeater = setInterval(()=>{ 
-      vibrationRepeater(vibrationType, VIBRATION_REPEAT, 1000);
-      if (!--counter) {
+      vibrationRepeater(vibrationType, vibrationRepeat, 1000);
+      if (!--loopCount) {
         clearInterval(repeater);
 
+        //wait a bit before accepting new events
         setTimeout(() => {
           acceptAppEvents = true;
-        }, VIBRATION_REPEAT_DELAY_MS);
+        }, VIBRATION_TIMEOUT_DELAY_MS);
       } 
     }, VIBRATION_REPEAT_DELAY_MS);
 
