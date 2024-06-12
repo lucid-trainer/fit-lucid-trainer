@@ -8,7 +8,7 @@ The app provides a simple menu with the option to start a session or view a log 
 
 ![Screenshot](screenshot.png)
 
-The session view provides a toggle button to start/stop an active capture session. During the session, a batch sampling of accelerometer, heart rate and the sleep sensor data is taken and averaged on a time increment (defaulting to every one minute) and then posted to a REST service (defaulting to the test service https://httpbin.org). The view provides feedback about the state of the connection with the service and the session duration. The user can also use the Dream button to signal waking from a recent dream.
+The session view provides a toggle button to start/stop an active capture session. During the session, a batch sampling of accelerometer, heart rate and the sleep sensor data is taken and averaged on a time increment (defaulting to every one minute) and then posted to a REST service (defaulting to the test service https://httpbin.org). The view provides feedback about the state of the connection with the service and the session duration. The user can also use the Sleep button to signal waking/return to sleep.
 
 ![Screenshot](session-screenshot.png)
 

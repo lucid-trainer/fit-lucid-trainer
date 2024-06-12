@@ -112,12 +112,10 @@ export const handleRestResponse = (status) => {
   if(deviceEvent && intensity > 0 && acceptAppEvents) {
     acceptAppEvents = false;
 
-    let vibrationType = getVibrationType(intensity)
-    let vibrationRepeat = getVibrationCount(intensity)
     let loopCount = getVibrationLoopCount(intensity)
 
     let repeater = setInterval(()=>{ 
-      vibrationRepeater(vibrationType, vibrationRepeat, 1000);
+      vibrationRepeater(intensity, 3000);
       if (!--loopCount) {
         clearInterval(repeater);
 

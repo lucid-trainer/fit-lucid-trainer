@@ -43,7 +43,6 @@ export let fileQueue = [];
 let restIntervalId = undefined;
 let restSessionUUID = "";
 let restMsg = {}; //the current object to capture state
-let dreamClickCnt = 0;
 let msgFilePoolNum = 0;
 let acceptAppEvents = true;
 
@@ -80,7 +79,7 @@ export const update = () => {
       deleteAllMatchingFiles(DIR, MESSAGE_FILE);
       msgFilePoolNum = 0;
 
-      disableDreamButton(false);
+      disableSleepButton(false);
 
       sessionStart = new Date() / 1000;
       durationText.text = "00:00:00";
@@ -118,7 +117,7 @@ const resetSession = () => {
   hrm.stop();
   accelerometer.stop();
 
-  disableDreamButton(true);
+  disableSleepButton(true);
   handleRestResponse("");
   resetMessageSocket();
 }
@@ -162,8 +161,9 @@ const sessionUpdateView = () => {
   podcastCycle.addEventListener("click", () => {
     let cycleVal = new Number(podcastCycle.value);
 
-    //0=2, 1=3, 2=4, 3=5, 4=1
-    let podcastNum = cycleVal == 4 ? 1 : cycleVal + 2;
+    let podcastNum = cycleVal == 4 ? 0 : cycleVal;
+    podcastNum++;
+
     addEvent("podcast." +  podcastNum);
   });
 
@@ -178,15 +178,12 @@ const sessionUpdateView = () => {
   });
 }
 
-function processDreamButton() {
-  if (dreamClickCnt < 5) {
-    dreamClickCnt++;
-  }
-  
-  addEvent("dream." + dreamClickCnt);
+function processSleepButton() {
+  addEvent("sleep");
 } 
 
 function addEvent(event) {
+  console.log("adding event = " + event);
   if(restMsg.event === undefined) {
     restMsg.event = event;
   } else {
@@ -231,19 +228,19 @@ const sessionBackswipeCallback = (evt) => {
   }, VIEW_RESET_DELAY_MS);
 }
 
-const disableDreamButton = (disabled) => {
-  let dreamButton = document.getElementById("button-dream");
+const disableSleepButton = (disabled) => {
+  let sleepButton = document.getElementById("button-sleep");
   
-  if(dreamButton == null) {
+  if(sleepButton == null) {
     return
   }
 
   if(disabled == true ) {
-    dreamButton.style.fill = "fb-dark-gray";
-    dreamButton.removeEventListener("click", processDreamButton);
+    sleepButton.style.fill = "fb-dark-gray";
+    sleepButton.removeEventListener("click", processSleepButton);
   } else {
-    dreamButton.style.fill = "#B22222";
-    dreamButton.addEventListener("click", processDreamButton);
+    sleepButton.style.fill = "#B22222";
+    sleepButton.addEventListener("click", processSleepButton);
   }
 }
 
@@ -274,12 +271,10 @@ export const handleRestResponse = (status) => {
   if(deviceEvent && intensity > 0 && acceptAppEvents) {
     acceptAppEvents = false;
 
-    let vibrationType = getVibrationType(intensity);
-    let vibrationRepeat = getVibrationCount(intensity);
     let loopCount = getVibrationLoopCount(intensity);
 
     let repeater = setInterval(()=>{ 
-      vibrationRepeater(vibrationType, vibrationRepeat, 1000);
+      vibrationRepeater(intensity, 1200);
       if (!--loopCount) {
         clearInterval(repeater);
 
@@ -307,7 +302,6 @@ const postUpdate = () => {
   //create a copy and reset the global values
   let restMsgCopy = JSON.parse(JSON.stringify(restMsg));
   Object.keys(restMsg).forEach(key => { restMsg[key] = undefined; });
-  dreamClickCnt = 0;
   
   //set additional fields
   restMsgCopy.sessionId = restSessionUUID;

@@ -128,8 +128,8 @@
   fill: fb-red;
 }
 
-#button-dream #text {
-  text-buffer: "DREAM";
+#button-sleep #text {
+  text-buffer: "SLEEP";
 }
 
 /* session-update elements */

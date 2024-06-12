@@ -56,13 +56,12 @@ export const sendQueryMessage = (setStatusCallback) => {
     let timestamp = getUTCString(now);
     let message = { timestamp }
 
-    console.log("rest call message request: " + JSON.stringify(message));
-      messaging.peerSocket.send({
-        command: DEVICE_QUERY_KEY,
-        msg: message
-      });
+    messaging.peerSocket.send({
+      command: DEVICE_QUERY_KEY,
+      msg: message
+    });
 
-      setStatusCallback({msg: "CONNECT WAIT"});
+    setStatusCallback({msg: "CONNECT WAIT"});
   } else {
     setStatusCallback({msg: "...QUERYING FAILED"});
     try {
