@@ -2,11 +2,13 @@ import clock from "clock";
 import document from "document";
 
 import { Stack } from '../../common/stack';
-import { clearLog, formatMessage, getUTCString, processFileQueue, 
-  writeMessageToFile, deleteFile, deleteAllMatchingFiles, listFilesInDirectory } from '../lib/files';
-import { getHeartRateSensor, getAccelerometer, getGyroscope }  from '../lib/sensors';
+import { formatMessage, getUTCString, processFileQueue, 
+  writeMessageToFile, deleteFile, deleteAllMatchingFiles } from '../lib/files';
+import { getHeartRateSensor, getAccelerometer }  from '../lib/sensors';
 import { initIndex } from "../views/index-init";
-import { initMessageSocket, resetMessageSocket } from "../lib/messages";
+import { initMessageSocket, resetMessageSocket, sendQueryMessage } from "../lib/messages";
+import { getVibrationCount, getVibrationType, getVibrationLoopCount, vibrationRepeater } from "../lib/haptics";
+import {mean} from "scientific";
 import sleep from "sleep";
 
 /**
@@ -23,14 +25,16 @@ const TOGGLE_VALUE_DELAY_MS = 300;
  */
 const VIEW_RESET_DELAY_MS = 200;
 const REST_INTERVAL = 1;
-const REST_RESPONSE_KEY = "restResponse";
 const DIR = "/private/data/"
 const MESSAGE_FILE = "message_";
 const MESSAGE_FILE_POOL_SIZE = 1000;
+const VIBRATION_REPEAT_DELAY_MS = 15000;
+const VIBRATION_TIMEOUT_DELAY_MS = 30000;
 
 let sessionStart = undefined;
 let sessionResult = "00:00:00"
 let durationText = undefined;
+let timeText = undefined;
 let restIntervalStatus = undefined;
 export let logArray = [];
 let fileRecon = new Stack();
@@ -39,11 +43,10 @@ export let fileQueue = [];
 let restIntervalId = undefined;
 let restSessionUUID = "";
 let restMsg = {}; //the current object to capture state
-let dreamClickCnt = 0;
 let msgFilePoolNum = 0;
+let acceptAppEvents = true;
 
 let accelerometer = getAccelerometer(restMsg, postUpdate);
-let gyroscope = getGyroscope(restMsg, postUpdate);
 let hrm = getHeartRateSensor(restMsg, postUpdate);
 
 export const update = () => {
@@ -55,6 +58,9 @@ export const update = () => {
   durationText.text = sessionResult;
 
   restIntervalStatus = document.getElementById("rest-interval");
+  timeText = document.getElementById("time");
+
+  acceptAppEvents = true;
 
   /* Session start / stop logic */
   sessionToggle.addEventListener("click", () => {
@@ -68,23 +74,23 @@ export const update = () => {
       //start the sensor readings
       hrm.start();
       accelerometer.start();
-      gyroscope.start();
 
       //clear the log file and private directory before new session
-      clearLog();
       deleteAllMatchingFiles(DIR, MESSAGE_FILE);
       msgFilePoolNum = 0;
 
-      disableDreamButton(false);
+      disableSleepButton(false);
 
       sessionStart = new Date() / 1000;
       durationText.text = "00:00:00";
+      timeText.text = "";
+      restIntervalStatus.text = "";
       clock.granularity = "seconds";
       clock.ontick = sessionDurationUpdate;
 
       restSessionUUID = getSessionId();
 
-      initMessageSocket(REST_RESPONSE_KEY, updateRestStatusText, handleResponse); 
+      initMessageSocket(handleRestResponse, handleResponse); 
 
       // Post update every x minute
       restIntervalId = setInterval(postUpdate, (REST_INTERVAL * 1000 * 30) + 500); 
@@ -100,6 +106,7 @@ const resetSession = () => {
   sessionStart = undefined;
   clock.ontick = undefined;
   restSessionUUID = "";
+  acceptAppEvents = true;
   
   if (typeof restIntervalId !== 'undefined') {
     clearInterval(restIntervalId);
@@ -110,8 +117,8 @@ const resetSession = () => {
   hrm.stop();
   accelerometer.stop();
 
-  disableDreamButton(true);
-  updateRestStatusText("");
+  disableSleepButton(true);
+  handleRestResponse("");
   resetMessageSocket();
 }
 
@@ -139,22 +146,25 @@ const sessionUpdateView = () => {
      go back to the previous view */
   document.getElementById("btn-play").addEventListener("click", () => {
     let toggleValues = getToggleValues();
-    addEvent("playsound." + toggleValues);
+    if(toggleValues && toggleValues != "") {
+      addEvent("playsound." + toggleValues);
+    }  
     document.history.back(); /* We know that this is the topmost view */
     document.onbeforeunload = sessionBackswipeCallback;
   });
 
-  /* Cycling through volume settings will update the master volume in the android app.  The event
+  /* Cycling through podcast settings will update the podcast in the android app.  The event
      will end up matching the last selected */
-  let volumeCycle = document.getElementById("volume-cycle");
-  volumeCycle.value = 3; //set default when entering view
+  let podcastCycle = document.getElementById("podcast-cycle");
+  podcastCycle.value = 0; //set default when entering view
 
-  volumeCycle.addEventListener("click", () => {
-    let cycleVal = new Number(volumeCycle.value);
-    
-    //0=2, 1=3, 2=4, 3=5, 4=6, 5=7, 6=8, 7=1
-    let volumeNum = cycleVal == 7 ? 1 : cycleVal + 2;
-    addEvent("volume." +  volumeNum);
+  podcastCycle.addEventListener("click", () => {
+    let cycleVal = new Number(podcastCycle.value);
+
+    let podcastNum = cycleVal == 4 ? 0 : cycleVal;
+    podcastNum++;
+
+    addEvent("podcast." +  podcastNum);
   });
 
   /**
@@ -168,15 +178,12 @@ const sessionUpdateView = () => {
   });
 }
 
-function processDreamButton() {
-  if (dreamClickCnt < 5) {
-    dreamClickCnt++;
-  }
-  
-  addEvent("dream." + dreamClickCnt);
+function processSleepButton() {
+  addEvent("sleep");
 } 
 
 function addEvent(event) {
+  console.log("adding event = " + event);
   if(restMsg.event === undefined) {
     restMsg.event = event;
   } else {
@@ -221,28 +228,65 @@ const sessionBackswipeCallback = (evt) => {
   }, VIEW_RESET_DELAY_MS);
 }
 
-const disableDreamButton = (disabled) => {
-  let dreamButton = document.getElementById("button-dream");
+const disableSleepButton = (disabled) => {
+  let sleepButton = document.getElementById("button-sleep");
   
-  if(dreamButton == null) {
+  if(sleepButton == null) {
     return
   }
 
   if(disabled == true ) {
-    dreamButton.style.fill = "fb-dark-gray";
-    dreamButton.removeEventListener("click", processDreamButton);
+    sleepButton.style.fill = "fb-dark-gray";
+    sleepButton.removeEventListener("click", processSleepButton);
   } else {
-    dreamButton.style.fill = "#B22222";
-    dreamButton.addEventListener("click", processDreamButton);
+    sleepButton.style.fill = "#B22222";
+    sleepButton.addEventListener("click", processSleepButton);
   }
 }
 
-export const updateRestStatusText = (status) => {
-  let restIntervalText = formatMessage(status);
+//updates the REST status display and initiates a haptic event if found
+export const handleRestResponse = (status) => {
+  let restIntervalText = status.msg;
+
+  if(restIntervalText === undefined) {
+    restIntervalText = "";
+  }
+
   if(restIntervalStatus === undefined) {
     restIntervalStatus = document.getElementById("rest-interval");
   }
   restIntervalStatus.text = restIntervalText;
+
+  if(timeText === undefined) {
+    timeText == document.getElementById("timeText");
+  }
+  timeText.text = formatMessage("");
+
+  //console.log("status=" + JSON.stringify(status));
+
+  let deviceEvent = status.eventType;
+  let intensity = status.intensity;
+
+  //check for events back from the android device
+  if(deviceEvent && intensity > 0 && acceptAppEvents) {
+    acceptAppEvents = false;
+
+    let loopCount = getVibrationLoopCount(intensity);
+
+    let repeater = setInterval(()=>{ 
+      vibrationRepeater(intensity, 1200);
+      if (!--loopCount) {
+        clearInterval(repeater);
+
+        //wait a bit before accepting new events
+        setTimeout(() => {
+          acceptAppEvents = true;
+        }, VIBRATION_TIMEOUT_DELAY_MS);
+      } 
+    }, VIBRATION_REPEAT_DELAY_MS);
+
+  }
+
 }
 
 
@@ -258,13 +302,22 @@ const postUpdate = () => {
   //create a copy and reset the global values
   let restMsgCopy = JSON.parse(JSON.stringify(restMsg));
   Object.keys(restMsg).forEach(key => { restMsg[key] = undefined; });
-  dreamClickCnt = 0;
   
   //set additional fields
   restMsgCopy.sessionId = restSessionUUID;
   let now = new Date();
   restMsgCopy.timestamp = getUTCString(now);
   restMsgCopy.isSleep = sleep.state;
+
+  //process sensor data
+  let moveArray = new Float32Array(restMsgCopy.moveArray);
+  delete restMsgCopy['moveArray'];
+
+  let moveZArray = new Float32Array(restMsgCopy.moveZArray);
+  delete restMsgCopy['moveZArray'];
+
+  restMsgCopy.move = mean(moveArray).toFixed(2);
+  restMsgCopy.moveZ = mean(moveZArray).toFixed(2);
 
   msgFilePoolNum = msgFilePoolNum < MESSAGE_FILE_POOL_SIZE ? msgFilePoolNum + 1 : 0;
   if(msgFilePoolNum == 0) {
@@ -279,7 +332,8 @@ const postUpdate = () => {
   fileRecon.push(file);
   fileQueue.push(file);
 
-  processFileQueue(fileQueue, msgFilePoolNum, updateRestStatusText );
+  processFileQueue(fileQueue, msgFilePoolNum, handleRestResponse );
+  sendQueryMessage( handleRestResponse );
 }
 
 const getSessionId = () => {

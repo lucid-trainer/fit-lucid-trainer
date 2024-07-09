@@ -1,8 +1,10 @@
 import * as messaging from 'messaging'
 import { settingsStorage } from 'settings'
-import { postMessage } from "../common/rest.js"
+import { FIND_ACTION, INSERT_ACTION, REST_RESPONSE_KEY, DEVICE_QUERY_KEY,
+   MSG_FROM_DEVICE_KEY, postMessage } from "../common/rest.js"
 import { me as companion} from "companion";
 import { inbox } from "file-transfer";
+
 
 let messageQueue = [];
 const ping = { key: "wakeCompanionEvent", value: "wake up!" };
@@ -21,6 +23,13 @@ companion.addEventListener("wakeinterval", () => {
 messaging.peerSocket.onopen = () => {
   restoreSettings();
   sendMessageToDevice();
+}
+
+// Messages coming from the app
+messaging.peerSocket.onmessage = function(evt) {
+  if(evt.data && evt.data.command === DEVICE_QUERY_KEY) {
+    getMessageFromRest(evt.data.msg);
+  }
 }
 
 // A user changes settings
@@ -62,12 +71,13 @@ const sendMessageToDevice = () => {
 
 }
 
-const postRestMessage = (msg, filename) => {
-  postMessage(msg)
+//sends sensor data to REST API
+const postFileToRest  = (msg, filename) => {
+  postMessage(msg, INSERT_ACTION)
   .then(response => {
     response.filename = filename;
     const data = {
-      key: "restResponse",
+      key: REST_RESPONSE_KEY,
       value: response,
     }
     messageQueue.push(data);
@@ -85,12 +95,39 @@ async function processAllFiles() {
       const filename = await file.name;
       
       let message = JSON.parse(payload);
-      postRestMessage(message, filename);
+      postFileToRest(message, filename);
     }
   } catch(e) {
       console.error(e);
   }
 }
+
+//checks for new app events from the REST API
+const getMessageFromRest = (msg) => {
+  let { timestamp } = msg;
+  msg = {
+      timestamp: { $gt: timestamp}
+  }
+
+  postMessage(msg, FIND_ACTION)
+  .then(response => {
+    if(response.documents && response.documents.length == 1) {
+      let { eventType, intensity } = response.documents[0];
+      const data = {
+        key: MSG_FROM_DEVICE_KEY,
+        value: {
+          eventType,
+          intensity
+        },
+      }
+      messageQueue.push(data);
+      sendMessageToDevice();
+    }  
+  }).catch(function (e) {
+    console.error(e);
+  });
+}
+
 
 inbox.addEventListener("newfile", processAllFiles);
 

@@ -1,13 +1,19 @@
 import * as messaging from "messaging";
-import { formatResponse} from "../../common/rest";
+import { REST_RESPONSE_KEY, MSG_FROM_DEVICE_KEY, 
+  DEVICE_QUERY_KEY, formatResponse} from "../../common/rest";
+import { getUTCString } from "../lib/files"
 
 export const ping = { key: "wakeEvent", value: "wake up!" };
 
-export const initMessageSocket = (responseKey, setStatusCallback, handleResponse) => {   
+export const initMessageSocket = (setStatusCallback, handleResponse) => {   
   if(messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
-    setStatusCallback("CONNECT READY");
+    setStatusCallback({
+      msg: "CONNECT READY"
+    });
   } else {
-    setStatusCallback("CONNECT PEND");
+    setStatusCallback({ 
+      msg: "CONNECT PEND"
+    });
   }
 
   // Send a ping when a connection opens
@@ -17,13 +23,52 @@ export const initMessageSocket = (responseKey, setStatusCallback, handleResponse
 
   // Listen for the onmessage event from companion
   messaging.peerSocket.onmessage = function(evt) {
-    if(evt.data.key === responseKey) {
+    if(evt.data.key === REST_RESPONSE_KEY) {
+      //console.log("rest response in message= " + JSON.stringify(evt.data));
       let response = formatResponse(evt.data.value);
       handleResponse(response);
       
       let { filename } = evt.data.value;
       let num = Number(filename.split('_').pop());
-      setStatusCallback("RECEIVED FILE " + num);
+      setStatusCallback(
+        {
+          msg: "RECEIVED FILE " + num
+        });
+    } else if(evt.data.key === MSG_FROM_DEVICE_KEY) {
+      let { eventType, intensity } = evt.data.value;
+      //console.log("data from device=" + JSON.stringify(evt.data.value) + " -END-");
+      setStatusCallback({
+        msg: "RECEIVED FROM DEVICE",
+        eventType,
+        intensity
+      })
+    }
+  }  
+}
+
+// sends message to companion to query the REST api for new app events
+export const sendQueryMessage = (setStatusCallback) => {
+
+  if (messaging.peerSocket.readyState === messaging.peerSocket.OPEN) {
+    setStatusCallback({msg: "QUERYING.."});
+
+    let now = new Date(Date.now() - 60000);
+    let timestamp = getUTCString(now);
+    let message = { timestamp }
+
+    messaging.peerSocket.send({
+      command: DEVICE_QUERY_KEY,
+      msg: message
+    });
+
+    setStatusCallback({msg: "CONNECT WAIT"});
+  } else {
+    setStatusCallback({msg: "...QUERYING FAILED"});
+    try {
+      //maybe if ping it the connection with the companion will open
+      messaging.peerSocket.send(ping);
+    } catch {
+      //do nothing
     }  
   }
 }

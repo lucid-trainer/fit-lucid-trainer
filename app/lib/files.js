@@ -2,8 +2,6 @@ import * as fs from "fs";
 import { outbox } from "file-transfer";
 
 const SETTINGS_FILE = "settings.cbor";
-const LOG_FILE = "sesslog.txt";
-const LOG_LENGTH = 50;
 
 export const saveSettings = (haptic, duration) => {
 
@@ -29,35 +27,8 @@ export const getSettings = () => {
     };
   };
 
-  export const writeToLog = (logArray) => {
-    let message = '';
-    if(logArray.length > LOG_LENGTH) {
-      logArray.length = LOG_LENGTH;
-    }
-
-    for (let i = 0; i < logArray.length; i++) {
-      message = message + logArray[i] + "\n";
-    }
-
-    fs.writeFileSync(LOG_FILE, message, "ascii");
-  };
-
-  export const readFromLog = () => {
-    let messages = '';
-    if (fs.existsSync(LOG_FILE)) {
-      messages = fs.readFileSync(LOG_FILE, "ascii");
-    }
-    return messages;
-  }
-
-  export const clearLog = () => {
-    if (fs.existsSync(LOG_FILE)) {
-      fs.unlinkSync(LOG_FILE); 
-    }
-  }
-
   export const formatMessage = (message) => {
-    if(message) {
+    if(message || message === "") {
       let d = new Date();
       let timeString = addZero(d.getHours()) + ":" + addZero(d.getMinutes());
       return timeString + " " + message;
@@ -86,7 +57,9 @@ export const getSettings = () => {
           sendCnt++;
         }
       } else {
-        setStatusCallback(`FILE ${fileNum} QUEUED`);
+        setStatusCallback({
+          msg: `FILE ${fileNum} QUEUED`
+        });
       }
     })
       .catch((err) => {
@@ -99,7 +72,9 @@ export const getSettings = () => {
   }
 
   export const sendMessageFile = (file, setStatusCallback) => {
-      setStatusCallback("SENDING...");
+      setStatusCallback({
+        msg: "SENDING..."
+      });
 
       outbox.enqueueFile(file)
         .then(ft => {
@@ -110,7 +85,9 @@ export const getSettings = () => {
         })
 
       let num = Number(file.split('_').pop());
-      setStatusCallback(`FILE ${num} SENT`);
+      setStatusCallback( {
+        msg : `FILE ${num} SENT`
+      });
   }
 
   export const deleteAllMatchingFiles = (directory, substr) => {

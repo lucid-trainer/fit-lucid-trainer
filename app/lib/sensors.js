@@ -1,6 +1,5 @@
 import { HeartRateSensor } from "heart-rate";
 import { Accelerometer } from "accelerometer";
-import { Gyroscope } from "gyroscope";
 import {sum, diff, mean, abs, std} from "scientific";
 import { LinearFilter } from "scientific/signal";
 
@@ -18,16 +17,11 @@ const coeffB = new Float32Array([
         0.00289819
     ]);
 
-// An instance of the filter for each axis of gyroscope
-const gyroFilter5hzX = new LinearFilter(coeffB, coeffA);
-const gyroFilter5hzY = new LinearFilter(coeffB, coeffA);
-const gyroFilter5hzZ = new LinearFilter(coeffB, coeffA);
 
 // An instance of the filter for each axis of accelerometer
-const accelFilter5hzX = new LinearFilter(coeffB, coeffA);
-const accelFilter5hzY = new LinearFilter(coeffB, coeffA);
-const accelFilter5hzZ = new LinearFilter(coeffB, coeffA);
-
+const filter5hzX = new LinearFilter(coeffB, coeffA);
+const filter5hzY = new LinearFilter(coeffB, coeffA);
+const filter5hzZ = new LinearFilter(coeffB, coeffA);
 
 export const getHeartRateSensor = (restMsg ) => {
     //1 readings per second, callback every 30 seconds
@@ -50,70 +44,62 @@ export const getHeartRateSensor = (restMsg ) => {
     return hrm;
 }
 
-export const getGyroscope = (restMsg) => {
-    //1 readings per second, callback every 30 seconds
-    let gyroscope = new Gyroscope({ frequency: 1, batch: 30});
-    
-    gyroscope.onreading = () => {
-        //include the raw heart rate readings
-        restMsg.gyrox = getNumberArrayFromFloat(gyroscope.readings.x,4).join();
-        restMsg.gyroy = getNumberArrayFromFloat(gyroscope.readings.y,4).join();
-        restMsg.gyroz = getNumberArrayFromFloat(gyroscope.readings.z,4).join();
-
-        restMsg.gyromove = getGyroMovement(gyroscope);
-    }
-
-    return gyroscope
-}
-
 export const getAccelerometer = (restMsg) => {
-    //1 readings per second, callback every 30 seconds
-    let accelerometer = new Accelerometer({ frequency: 1, batch: 30});
+    //100 readings per second, callback every 10th of a second
+    let accelerometer = new Accelerometer({ frequency: 100, batch: 10});
     
     accelerometer.onreading = () => {
-        //include the raw heart rate readings
-        restMsg.accelx = getNumberArrayFromFloat(accelerometer.readings.x,4).join();
-        restMsg.accely = getNumberArrayFromFloat(accelerometer.readings.y,4).join();
-        restMsg.accelz = getNumberArrayFromFloat(accelerometer.readings.z,4).join();
+        processAccelReadings(accelerometer, restMsg);
+    };
 
-        restMsg.accelmove = getAccelMovement(accelerometer);
+    return accelerometer;
+} 
+
+function processAccelReadings(accelerometer, restMsg) {
+    let moveArray = restMsg.moveArray || [];
+    let moveZArray = restMsg.moveZArray || [];
+    let positionArray = restMsg.positionArray || [];
+
+    //use the filter to get a current reading
+    let filtX = filter5hzX.update(accelerometer.readings.x)[0];
+    let filtY = filter5hzY.update(accelerometer.readings.y)[0];
+    let filtZ = filter5hzZ.update(accelerometer.readings.z)[0];
+
+    let currPosition = {
+        x: filtX.toFixed(4),
+        y: filtY.toFixed(4),
+        z: filtZ.toFixed(4)
+    };
+
+    let prevPosition = positionArray.slice(-1)[0];
+
+    //This array should end up containing the starting and ending value for a recording
+    if (positionArray.length < 2) {
+        positionArray.push(currPosition);
+    } else {
+        positionArray[1] = currPosition;
     }
 
-    return accelerometer
-}
+    //calculate difference between each
+    if(prevPosition)  {
+        let postDiff = sum(new Float32Array([
+            abs(diff(new Float32Array([prevPosition.x, currPosition.x]))),
+            abs(diff(new Float32Array([prevPosition.y, currPosition.y]))),
+            abs(diff(new Float32Array([prevPosition.z, currPosition.z])))])
+        ).toFixed(2);
 
-function getGyroMovement(gyroscope) {
+        let postZDiff = sum(new Float32Array([
+            abs(diff(new Float32Array([prevPosition.z, currPosition.z])))])
+        ).toFixed(2);
 
-    let chunksx = sliceIntoChunks(gyroscope.readings.x, 10);
-    let chunksy = sliceIntoChunks(gyroscope.readings.y, 10);
-    let chunksz = sliceIntoChunks(gyroscope.readings.z, 10);
+        moveArray.push(postDiff);
+        moveZArray.push(postZDiff);
+    }
 
-    let xVals = chunksx.map(chunkx => gyroFilter5hzX.update(chunkx)[0]);
-    let yVals = chunksy.map(chunky => gyroFilter5hzY.update(chunky)[0]);
-    let zVals = chunksz.map(chunkz => gyroFilter5hzZ.update(chunkz)[0]);
-
-    return sum(new Float32Array(
-        ...abs(diff(new Float32Array(xVals))),
-        ...abs(diff(new Float32Array(yVals))),
-        ...abs(diff(new Float32Array(zVals))))
-    ).toFixed(4);
-}
-
-function getAccelMovement(accelerometer) {
-
-    let chunksx = sliceIntoChunks(accelerometer.readings.x, 10);
-    let chunksy = sliceIntoChunks(accelerometer.readings.y, 10);
-    let chunksz = sliceIntoChunks(accelerometer.readings.z, 10);
-
-    let xVals = chunksx.map(chunkx => accelFilter5hzX.update(chunkx)[0]);
-    let yVals = chunksy.map(chunky => accelFilter5hzY.update(chunky)[0]);
-    let zVals = chunksz.map(chunkz => accelFilter5hzZ.update(chunkz)[0]);
-
-    return sum(new Float32Array(
-        ...abs(diff(new Float32Array(xVals))),
-        ...abs(diff(new Float32Array(yVals))),
-        ...abs(diff(new Float32Array(zVals))))
-    ).toFixed(4);
+    //update the fields on the restMsg object
+    restMsg.positionArray = positionArray;
+    restMsg.moveArray = moveArray;
+    restMsg.moveZArray = moveZArray;
 }
 
 //convert a Float32Array to Number Array
@@ -145,12 +131,4 @@ function average(data) {
     }, 0);
     var avg = sum / data.length;
     return avg;
-}
-
-function sliceIntoChunks(data, length) {
-    var result = [];
-    for (var i = 0; i < data.length; i += length) {
-        result.push(data.subarray(i, i + length));
-    }
-    return result;
 }
